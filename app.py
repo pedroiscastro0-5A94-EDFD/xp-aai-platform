@@ -442,6 +442,17 @@ if page == "📊  Overview":
 
     with col_right:
         st.markdown("#### Client Status")
+
+        # Column headers
+        hdr_a, hdr_b, hdr_c = st.columns([3, 2, 1])
+        with hdr_a:
+            st.markdown("<span style='color:#4B5B6F;font-size:10px;text-transform:uppercase;letter-spacing:1px;font-weight:600'>Client</span>", unsafe_allow_html=True)
+        with hdr_b:
+            st.markdown("<span style='color:#4B5B6F;font-size:10px;text-transform:uppercase;letter-spacing:1px;font-weight:600'>Monthly Return</span>", unsafe_allow_html=True)
+        with hdr_c:
+            st.markdown("<span style='color:#4B5B6F;font-size:10px;text-transform:uppercase;letter-spacing:1px;font-weight:600'>Status</span>", unsafe_allow_html=True)
+        st.markdown("<hr style='border-color:rgba(255,255,255,0.08);margin:2px 0 6px 0'>", unsafe_allow_html=True)
+
         for c in st.session_state.all_clients:
             status_info = STATUS_MAP.get(c["status"], {})
             profile_label = PROFILE_LABELS.get(c["profile"], c["profile"])
@@ -455,7 +466,6 @@ if page == "📊  Overview":
                     ret = holdings_data["monthlyReturn"]
                     color = "#10B981" if ret > 0 else "#EF4444"
                     st.markdown(f"<span style='color:{color};font-family:monospace;font-size:14px'>{format_pct(ret)}</span>", unsafe_allow_html=True)
-                    st.markdown(f"<span style='color:#6B7B8F;font-size:11px'>this month</span>", unsafe_allow_html=True)
             with col_c:
                 st.markdown(f"<span class='status-badge status-{c['status']}'>{status_info.get('label', c['status'])}</span>", unsafe_allow_html=True)
             st.markdown("<hr style='border-color:rgba(255,255,255,0.04);margin:4px 0'>", unsafe_allow_html=True)
