@@ -1,6 +1,6 @@
 """XP AAI Platform — Skill Agents
 
-Six specialized agents orchestrated by Claude Opus 4.6:
+Six specialized agents orchestrated by GPT-4o:
 1. Portfolio Analyst — calculates returns with code, never LLM-generated numbers
 2. Macro Analyst — extracts key projections from XP's macro report
 3. Recommendation Engine — drift analysis + CVM-compliant suggestions

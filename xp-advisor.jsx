@@ -243,23 +243,24 @@ export default function XPAdvisor() {
   const portfolio = selectedClient ? MOCK_HOLDINGS[selectedClient] : null;
   const transactions = selectedClient ? (MOCK_TRANSACTIONS[selectedClient] || []) : [];
 
-  const callClaude = useCallback(async (systemPrompt, userPrompt) => {
+  const callOpenAI = useCallback(async (systemPrompt, userPrompt) => {
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: "gpt-4o",
           max_tokens: 1000,
-          system: systemPrompt,
-          messages: [{ role: "user", content: userPrompt }],
-          tools: [{ type: "web_search_20250305", name: "web_search" }],
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
         }),
       });
       const data = await response.json();
-      return data.content?.map(b => b.text || "").filter(Boolean).join("\n") || "Erro ao gerar análise.";
+      return data.choices?.[0]?.message?.content || "Erro ao gerar análise.";
     } catch (err) {
-      console.error("Claude API error:", err);
+      console.error("OpenAI API error:", err);
       return "Erro ao gerar análise. Tente novamente.";
     }
   }, []);
@@ -280,11 +281,11 @@ IPCA mês: ${formatPct(MARKET_BENCHMARKS.ipca.monthly)}
 Dólar: R$${MARKET_BENCHMARKS.dolar.current} (var: ${formatPct(MARKET_BENCHMARKS.dolar.monthlyChange)})
 Movimentações: ${JSON.stringify(transactions.map(t => ({ data: t.date, tipo: t.type, ativo: t.asset, valor: formatBRL(t.total), motivo: t.reason })))}
 Objetivos do cliente: ${client.investmentGoals}`;
-    const result = await callClaude(sysPrompt, userPrompt);
+    const result = await callOpenAI(sysPrompt, userPrompt);
     setAiCommentary(result);
     setAiLoading(false);
     setReportGenerated(true);
-  }, [client, portfolio, transactions, callClaude]);
+  }, [client, portfolio, transactions, callOpenAI]);
 
   const generateEmail = useCallback(async () => {
     if (!client || !portfolio) return;
@@ -298,22 +299,21 @@ Performance recente: ${formatPct(portfolio.monthlyReturn)} no mês
 Perfil: ${PROFILE_LABELS[client.profile]}
 Objetivos: ${client.investmentGoals}
 Notas: ${client.notes}`;
-    const result = await callClaude(sysPrompt, userPrompt);
+    const result = await callOpenAI(sysPrompt, userPrompt);
     setEmailDraft(result);
     setEmailLoading(false);
-  }, [client, portfolio, emailType, callClaude]);
+  }, [client, portfolio, emailType, callOpenAI]);
 
   const sendEmail = useCallback(async () => {
     if (!client || !emailDraft) return;
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: "gpt-4o",
           max_tokens: 1000,
           messages: [{ role: "user", content: `Send an email to ${client.email} with subject "Relatório Mensal - XP Investimentos" and body:\n\n${emailDraft}` }],
-          mcp_servers: [{ type: "url", url: "https://gmail.mcp.claude.com/mcp", name: "gmail" }],
         }),
       });
       const data = await response.json();

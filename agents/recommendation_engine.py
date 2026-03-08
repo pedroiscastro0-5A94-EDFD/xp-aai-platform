@@ -2,12 +2,12 @@
 
 Compares current allocation vs. target ranges for each risk profile,
 flags drift >5%, flags individual stocks with extreme returns.
-Combines code logic + Claude Opus 4.6 API for recommendation text.
+Combines code logic + GPT-4o API for recommendation text.
 Uses CVM-compliant language only.
 """
 
 import os
-from anthropic import Anthropic
+from openai import OpenAI
 from data.market import TARGET_ALLOCATIONS, CLASS_LABELS, PROFILE_LABELS
 
 
@@ -34,8 +34,8 @@ class RecommendationEngine:
     name = "Recommendation Engine"
 
     def __init__(self):
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
-        self.client = Anthropic(api_key=api_key) if api_key else None
+        api_key = os.environ.get("OPENAI_API_KEY")
+        self.client = OpenAI(api_key=api_key) if api_key else None
 
     def run(
         self,
@@ -107,7 +107,7 @@ class RecommendationEngine:
             for cls, sentiment in macro_analysis["market_sentiment"].items():
                 macro_sentiment += f"- {CLASS_LABELS.get(cls, cls)}: {sentiment}\n"
 
-        # Use Claude for recommendation text if available
+        # Use GPT-4o for recommendation text if available
         if self.client:
             try:
                 user_prompt = (
@@ -119,14 +119,16 @@ class RecommendationEngine:
                     f"MACRO SENTIMENT:\n{macro_sentiment}\n\n"
                     f"Generate CVM-compliant rebalancing recommendations in Portuguese."
                 )
-                response = self.client.messages.create(
-                    model="claude-opus-4-6",
+                response = self.client.chat.completions.create(
+                    model="gpt-4o",
                     max_tokens=1000,
                     temperature=0.3,
-                    system=SYSTEM_PROMPT,
-                    messages=[{"role": "user", "content": user_prompt}],
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": user_prompt},
+                    ],
                 )
-                recommendation_text = response.content[0].text
+                recommendation_text = response.choices[0].message.content
             except Exception:
                 recommendation_text = self._generate_fallback_recommendations(
                     client, drift_analysis, positions_to_review, profile

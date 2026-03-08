@@ -1,11 +1,11 @@
 """Letter Writer Agent
 
 Takes outputs from the 3 agents above, generates a professional 2-page
-monthly letter in Portuguese (BR). Pure prompt engineering with Claude Opus 4.6 API.
+monthly letter in Portuguese (BR). Pure prompt engineering with GPT-4o API.
 """
 
 import os
-from anthropic import Anthropic
+from openai import OpenAI
 from data.market import AAI_PROFILE, PROFILE_LABELS
 
 
@@ -40,8 +40,8 @@ class LetterWriter:
     name = "Letter Writer"
 
     def __init__(self):
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
-        self.client = Anthropic(api_key=api_key) if api_key else None
+        api_key = os.environ.get("OPENAI_API_KEY")
+        self.client = OpenAI(api_key=api_key) if api_key else None
 
     def run(
         self,
@@ -113,14 +113,16 @@ class LetterWriter:
 
         if self.client:
             try:
-                response = self.client.messages.create(
-                    model="claude-opus-4-6",
+                response = self.client.chat.completions.create(
+                    model="gpt-4o",
                     max_tokens=2000,
                     temperature=0.4,
-                    system=SYSTEM_PROMPT,
-                    messages=[{"role": "user", "content": user_prompt}],
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": user_prompt},
+                    ],
                 )
-                letter_text = response.content[0].text
+                letter_text = response.choices[0].message.content
             except Exception:
                 letter_text = self._generate_fallback_letter(
                     client, portfolio_analysis, macro_analysis, recommendations

@@ -7,7 +7,7 @@ Execution order:
   → Compliance Reviewer
   → Doc Formatter
 
-All LLM calls use Claude Opus 4.6 via the Anthropic Python SDK.
+All LLM calls use GPT-4o via the OpenAI Python SDK.
 """
 
 import os

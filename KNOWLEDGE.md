@@ -11,9 +11,10 @@
 4. [Prompt Engineering Decisions](#4-prompt-engineering-decisions)
 5. [Code & Technology Decisions](#5-code--technology-decisions)
 6. [Platform Features — Add Client & Dynamic Management](#6-platform-features--add-client--dynamic-management)
-7. [Results Comparison: Before vs After](#7-results-comparison-before-vs-after)
-8. [The 3 Interview Questions — Polished Answers](#8-the-3-interview-questions--polished-answers)
-9. [Talking Points & Anticipated Questions](#9-talking-points--anticipated-questions)
+7. [Deployment — GitHub & Streamlit Cloud](#7-deployment--github--streamlit-cloud)
+8. [Results Comparison: Before vs After](#8-results-comparison-before-vs-after)
+9. [The 3 Interview Questions — Polished Answers](#9-the-3-interview-questions--polished-answers)
+10. [Talking Points & Anticipated Questions](#10-talking-points--anticipated-questions)
 
 ---
 
@@ -63,9 +64,9 @@ The monthly advisory workflow has **naturally separable concerns**:
 | Agent | Role | LLM? | Why Separate? |
 |-------|------|-------|---------------|
 | **Portfolio Analyst** | Calculate returns, P&L | No (pandas) | Financial math must be deterministic |
-| **Macro Analyst** | Extract projections | Yes (Opus 4.6) | Needs deep text comprehension |
+| **Macro Analyst** | Extract projections | Yes (GPT-4o) | Needs deep text comprehension |
 | **Recommendation Engine** | Drift analysis + suggestions | Hybrid | Code for drift calc, LLM for CVM-compliant text |
-| **Letter Writer** | Generate Portuguese letter | Yes (Opus 4.6) | Core creative writing task |
+| **Letter Writer** | Generate Portuguese letter | Yes (GPT-4o) | Core creative writing task |
 | **Compliance Reviewer** | CVM compliance gate | Hybrid | Regex for patterns, LLM for nuanced review |
 | **Doc Formatter** | Create .docx | No (python-docx) | Pure formatting, no LLM needed |
 
@@ -120,7 +121,7 @@ The key insight: Portfolio and Macro analysis are **independent** — they don't
 - BRL/USD: R$6.20 EOY 2025, R$6.40 EOY 2026
 - Fiscal: Primary balance target achievable but debt rising
 
-**LLM role:** Claude Opus 4.6 reads the dense macro text and produces a concise, structured summary. Temperature 0.2 (factual, not creative).
+**LLM role:** GPT-4o reads the dense macro text and produces a concise, structured summary. Temperature 0.2 (factual, not creative).
 
 **Fallback:** If no API key, returns structured data from the benchmarks + hardcoded XP projections from the report.
 
@@ -160,7 +161,7 @@ The key insight: Portfolio and Macro analysis are **independent** — they don't
 - Checks for advisor signature
 - Checks for client name personalization
 
-**Layer 2 — LLM review (Claude Opus 4.6):**
+**Layer 2 — LLM review (GPT-4o):**
 - Nuanced review for tone, misleading implications, context-dependent violations
 - Temperature 0.1 (very strict, factual)
 
@@ -181,11 +182,11 @@ The key insight: Portfolio and Macro analysis are **independent** — they don't
 
 ## 4. Prompt Engineering Decisions
 
-### Why Opus 4.6?
-- It's the most capable Claude model — needed for understanding dense Portuguese financial text
+### Why GPT-4o?
+- It's OpenAI's most capable and versatile model — strong at understanding dense Portuguese financial text
 - The macro report is 50+ pages of complex economic analysis
 - CVM compliance requires nuanced understanding of regulatory language
-- The challenge specifically requires Claude Opus 4.6
+- GPT-4o balances quality and cost, making it ideal for a production advisory tool
 
 ### Temperature Choices
 | Agent | Temperature | Why |
@@ -227,7 +228,7 @@ The key insight: Portfolio and Macro analysis are **independent** — they don't
 - No frontend skills needed — pure Python
 - Perfect for prototyping and demo purposes
 - `streamlit run app.py` — one command to launch
-- 5 pages: Painel de Clientes, Visão do Cliente, Gerar Relatório, Recomendações, Adicionar Cliente
+- 5 pages: Client Dashboard, Client Deep Dive, Report Generator, Recommendations, ➕ Add Client
 
 ### Why Plotly (not Matplotlib)?
 - Interactive charts (hover, zoom) — much better for financial data
@@ -310,7 +311,42 @@ This is a clean pattern that solves the Streamlit widget persistence problem wit
 
 ---
 
-## 7. Results Comparison: Before vs After
+## 7. Deployment — GitHub & Streamlit Cloud
+
+### What We Did
+The platform is deployed as a **live web app** accessible via URL — no installation needed.
+
+- **GitHub repo:** Public repository at `github.com/pedroiscastro0-5A94-EDFD/xp-aai-platform`
+- **Streamlit Community Cloud:** Free hosting that reads directly from the GitHub repo
+- **Shareable URL:** Anyone with the link can open the app in their browser
+
+### How It Works
+1. Code lives on GitHub (public repo, 33 files)
+2. Streamlit Cloud connects to the repo and deploys automatically
+3. The `OPENAI_API_KEY` is stored in Streamlit's encrypted Secrets (not in the code)
+4. When someone visits the URL, Streamlit spins up the app (~30 seconds if it was sleeping)
+5. Any push to GitHub auto-redeploys — no manual steps
+
+### Why This Matters for the Interview
+- **It's not just code on a laptop** — it's a live, shareable product anyone can try
+- **Shows deployment awareness** — prototype → GitHub → cloud hosting → shareable URL
+- **The app stays active indefinitely** on the free tier (sleeps after inactivity, wakes on visit)
+- **Secrets management done right** — API key is in Streamlit Secrets, never in the codebase
+
+### Files Excluded from GitHub (`.gitignore`)
+```
+__pycache__/     # Python cache files
+*.pyc            # Compiled Python
+.env             # Local environment variables
+.DS_Store        # macOS system files
+.streamlit/secrets.toml  # Local secrets
+.claude/         # Claude Code session data
+drive-download-*/  # Temporary download folders
+```
+
+---
+
+## 8. Results Comparison: Before vs After
 
 ### Original MVP Letter Problems
 1. Numbers might be hallucinated (no calculation layer)
@@ -337,7 +373,7 @@ This is a clean pattern that solves the Streamlit widget persistence problem wit
 
 ---
 
-## 8. The 3 Interview Questions — Polished Answers
+## 9. The 3 Interview Questions — Polished Answers
 
 ### Q1: What are the main issues with the first version?
 
@@ -371,7 +407,7 @@ I broke the workflow into 6 specialized agents, each with a clear responsibility
 **Principle 3: Compliance by design, not by hope.**
 Instead of hoping the LLM produces compliant text, I built compliance into the architecture at multiple levels:
 - The Recommendation Engine's prompts explicitly list forbidden and allowed CVM language patterns
-- The Compliance Reviewer uses regex for known violations AND Claude Opus 4.6 for nuanced review
+- The Compliance Reviewer uses regex for known violations AND GPT-4o for nuanced review
 - The letter cannot be delivered without passing the compliance gate
 
 **Why Streamlit?** Because the deliverable isn't just one letter — it's a platform that shows how agents can power an advisor's entire workflow. The dashboard, deep dive, report generator, recommendation, and add client pages demonstrate a vision for the AAI's daily tool.
@@ -404,7 +440,7 @@ Instead of hoping the LLM produces compliant text, I built compliance into the a
 
 ---
 
-## 9. Talking Points & Anticipated Questions
+## 10. Talking Points & Anticipated Questions
 
 ### Key Things to Highlight
 1. **"Code for math, LLM for language"** — This is the headline design decision. Lead with it.
@@ -413,11 +449,12 @@ Instead of hoping the LLM produces compliant text, I built compliance into the a
 4. **Albert's specific issues** — HAPV3 at -74.58% is a great concrete example of why alerts matter.
 5. **Add Client = real tool, not just a demo** — Advisors can add clients via CRM or manual entry and immediately run the agent pipeline for them.
 6. **Dynamic architecture** — Everything works for new clients, not just hardcoded mocks. This proves the system scales.
+7. **Deployed and shareable** — Not just local code: it's a live URL anyone can try. Shows you think beyond "it works on my machine."
 
 ### Anticipated Questions & Answers
 
-**"Why Claude Opus 4.6 instead of a cheaper model?"**
-Financial analysis requires deep understanding of dense Portuguese text (50-page macro reports), nuanced CVM compliance checking, and sophisticated client communication. Cheaper models produce generic output. For a high-AUM client base where each letter represents a trust relationship, the model quality directly impacts the advisory relationship.
+**"Why GPT-4o instead of a cheaper model?"**
+Financial analysis requires deep understanding of dense Portuguese text (50-page macro reports), nuanced CVM compliance checking, and sophisticated client communication. Cheaper models produce generic output. For a high-AUM client base where each letter represents a trust relationship, the model quality directly impacts the advisory relationship. GPT-4o gives the best balance of quality and cost for this use case.
 
 **"Couldn't you just improve the prompts in the original Rivet graph?"**
 Better prompts would help, but they don't solve the fundamental problems: LLMs can't do reliable math, can't guarantee CVM compliance, and can't generate .docx files. These require code-based solutions, not prompt engineering alone.
@@ -425,8 +462,8 @@ Better prompts would help, but they don't solve the fundamental problems: LLMs c
 **"How would you handle a client who disagrees with the recommendation?"**
 The system is designed to support the advisor, not replace them. The recommendations page shows current vs. target allocation clearly — the advisor can discuss these with the client and adjust. In a production version, the advisor would edit the letter before sending, and the system would learn from their edits.
 
-**"What about cost? Running Opus 4.6 for every client monthly?"**
-With 52 clients and ~4 Opus 4.6 calls per client, that's ~200 API calls/month. At current pricing, this costs roughly $20-50/month — negligible compared to the advisor's time saved (estimated 2-3 hours per report manually, so ~100+ hours saved monthly).
+**"What about cost? Running GPT-4o for every client monthly?"**
+With 52 clients and ~4 GPT-4o calls per client, that's ~200 API calls/month. At current pricing, this costs roughly $10-30/month — negligible compared to the advisor's time saved (estimated 2-3 hours per report manually, so ~100+ hours saved monthly).
 
 **"How do you ensure the LLM doesn't hallucinate numbers even with your architecture?"**
 Two layers: (1) Numbers are calculated by pandas and passed to the LLM as structured data, not raw text. The prompt explicitly says "use ONLY the numbers provided." (2) In a production version, I'd add a post-processing step that regex-matches all numbers in the generated letter against the input data and flags any discrepancies.
@@ -446,9 +483,9 @@ xp-challenge/
 ├── agents/                          # 6 specialized agents
 │   ├── __init__.py
 │   ├── portfolio_analyst.py         # Pandas-based calculations
-│   ├── macro_analyst.py             # Claude Opus 4.6 for macro analysis
+│   ├── macro_analyst.py             # GPT-4o for macro analysis
 │   ├── recommendation_engine.py     # Code + LLM for CVM-compliant recs
-│   ├── letter_writer.py             # Claude Opus 4.6 for letter generation
+│   ├── letter_writer.py             # GPT-4o for letter generation
 │   ├── compliance_reviewer.py       # Regex + LLM compliance gate
 │   └── doc_formatter.py             # python-docx for .docx generation
 ├── data/                            # Mock client and market data
@@ -488,4 +525,4 @@ streamlit run app.py
 
 ---
 
-*Last updated: March 7, 2026*
+*Last updated: March 8, 2026*

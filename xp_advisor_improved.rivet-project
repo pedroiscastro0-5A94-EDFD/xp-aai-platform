@@ -151,12 +151,12 @@ data:
             - output->"Chat" pa_chat/prompt
           visualData: 800/300/300/4//
 
-        '[pa_chat]:chat "Claude Opus 4.6"':
+        '[pa_chat]:chat "GPT-4o"':
           data:
             cache: false
             enableFunctionUse: false
             maxTokens: 800
-            model: claude-opus-4-6
+            model: gpt-4o
             temperature: 0.2
             top_p: 1
             useAsGraphPartialOutput: false
@@ -209,12 +209,12 @@ data:
             - output->"Chat" ma_chat/prompt
           visualData: 450/300/300/2//
 
-        '[ma_chat]:chat "Claude Opus 4.6"':
+        '[ma_chat]:chat "GPT-4o"':
           data:
             cache: false
             enableFunctionUse: false
             maxTokens: 1200
-            model: claude-opus-4-6
+            model: gpt-4o
             temperature: 0.2
             top_p: 1
             useAsGraphPartialOutput: false
@@ -307,12 +307,12 @@ data:
             - output->"Chat" re_chat/prompt
           visualData: 850/400/300/6//
 
-        '[re_chat]:chat "Claude Opus 4.6"':
+        '[re_chat]:chat "GPT-4o"':
           data:
             cache: false
             enableFunctionUse: false
             maxTokens: 1000
-            model: claude-opus-4-6
+            model: gpt-4o
             temperature: 0.3
             top_p: 1
             useAsGraphPartialOutput: false
@@ -403,12 +403,12 @@ data:
             - output->"Chat" lw_chat/prompt
           visualData: 500/450/350/5//
 
-        '[lw_chat]:chat "Claude Opus 4.6"':
+        '[lw_chat]:chat "GPT-4o"':
           data:
             cache: false
             enableFunctionUse: false
             maxTokens: 2000
-            model: claude-opus-4-6
+            model: gpt-4o
             temperature: 0.4
             top_p: 1
             useAsGraphPartialOutput: false
@@ -463,12 +463,12 @@ data:
             - output->"Chat" cr_chat/prompt
           visualData: 450/300/350/2//
 
-        '[cr_chat]:chat "Claude Opus 4.6"':
+        '[cr_chat]:chat "GPT-4o"':
           data:
             cache: false
             enableFunctionUse: false
             maxTokens: 800
-            model: claude-opus-4-6
+            model: gpt-4o
             temperature: 0.1
             top_p: 1
             useAsGraphPartialOutput: false

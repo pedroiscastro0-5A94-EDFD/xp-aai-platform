@@ -1,11 +1,11 @@
 """Macro Analyst Agent
 
 Reads XP's macro report, extracts key projections (Selic, IPCA, GDP, FX),
-and summarizes relevance to client portfolios using Claude Opus 4.6 API.
+and summarizes relevance to client portfolios using GPT-4o API.
 """
 
 import os
-from anthropic import Anthropic
+from openai import OpenAI
 
 
 SYSTEM_PROMPT = """You are a senior macroeconomic analyst at XP Investimentos.
@@ -26,13 +26,13 @@ Be concise — max 400 words total."""
 
 
 class MacroAnalyst:
-    """Analyzes macro reports using Claude Opus 4.6."""
+    """Analyzes macro reports using GPT-4o."""
 
     name = "Macro Analyst"
 
     def __init__(self):
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
-        self.client = Anthropic(api_key=api_key) if api_key else None
+        api_key = os.environ.get("OPENAI_API_KEY")
+        self.client = OpenAI(api_key=api_key) if api_key else None
 
     def run(self, macro_report_text: str, benchmarks: dict) -> dict:
         """
@@ -57,15 +57,15 @@ class MacroAnalyst:
             f"- IFIX monthly: {benchmarks['ifix']['monthly']}%\n"
         )
 
-        # If we have an API key, use Claude for the analysis
+        # If we have an API key, use GPT-4o for the analysis
         if self.client:
             try:
-                response = self.client.messages.create(
-                    model="claude-opus-4-6",
+                response = self.client.chat.completions.create(
+                    model="gpt-4o",
                     max_tokens=1500,
                     temperature=0.2,
-                    system=SYSTEM_PROMPT,
                     messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
                         {
                             "role": "user",
                             "content": (
@@ -73,10 +73,10 @@ class MacroAnalyst:
                                 f"--- XP MACRO RESEARCH REPORT ---\n\n"
                                 f"{macro_report_text[:8000]}"
                             ),
-                        }
+                        },
                     ],
                 )
-                analysis_text = response.content[0].text
+                analysis_text = response.choices[0].message.content
             except Exception as e:
                 analysis_text = self._generate_fallback_analysis(benchmarks)
         else:

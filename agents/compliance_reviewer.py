@@ -2,12 +2,12 @@
 
 Reviews the letter for CVM compliance — no direct buy/sell language,
 includes disclaimer, no guaranteed returns. Acts as a quality gate.
-Uses Claude Opus 4.6 API.
+Uses GPT-4o API.
 """
 
 import os
 import re
-from anthropic import Anthropic
+from openai import OpenAI
 
 
 SYSTEM_PROMPT = """You are a CVM compliance officer at XP Investimentos.
@@ -52,8 +52,8 @@ class ComplianceReviewer:
     name = "Compliance Reviewer"
 
     def __init__(self):
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
-        self.client = Anthropic(api_key=api_key) if api_key else None
+        api_key = os.environ.get("OPENAI_API_KEY")
+        self.client = OpenAI(api_key=api_key) if api_key else None
 
     def run(self, letter_text: str, client_name: str) -> dict:
         """
@@ -128,19 +128,19 @@ class ComplianceReviewer:
         llm_review = None
         if self.client and letter_text:
             try:
-                response = self.client.messages.create(
-                    model="claude-opus-4-6",
+                response = self.client.chat.completions.create(
+                    model="gpt-4o",
                     max_tokens=800,
                     temperature=0.1,
-                    system=SYSTEM_PROMPT,
                     messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
                         {
                             "role": "user",
                             "content": f"Review this investment letter:\n\n{letter_text}",
-                        }
+                        },
                     ],
                 )
-                llm_review = response.content[0].text
+                llm_review = response.choices[0].message.content
             except Exception:
                 llm_review = None
 
