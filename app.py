@@ -146,6 +146,61 @@ def get_drift_data(client_profile: str, holdings: list, total_aum: float) -> pd.
         })
     return pd.DataFrame(rows)
 
+def compute_client_monthly_history(holdings, target_12m_return=None):
+    """Compute synthetic monthly returns for a client based on their portfolio weights.
+
+    Each asset class in the portfolio is mapped to a market benchmark:
+      renda_fixa → CDI, acoes → IBOV, fiis → IFIX,
+      internacional → S&P 500 (BRL), cripto → 2× S&P 500 (BRL).
+    The weighted combination gives a realistic month-by-month return series.
+    If target_12m_return is provided, the series is scaled so the cumulative
+    12-month return matches the stored value.
+    """
+    # Aggregate portfolio weights by asset class
+    class_weights = {}
+    for h in holdings:
+        cls = h["class"]
+        class_weights[cls] = class_weights.get(cls, 0) + h["weight"]
+    total = sum(class_weights.values())
+    if total > 0:
+        class_weights = {k: v / total for k, v in class_weights.items()}
+
+    # Map each asset class to its closest benchmark
+    bench_map = {
+        "renda_fixa": "cdi",
+        "acoes": "ibovespa",
+        "fiis": "ifix",
+        "internacional": "sp500_brl",
+        "cripto": "sp500_brl",  # amplified below
+    }
+
+    n_months = len(BENCHMARK_HISTORY["months"])
+    monthly_returns = []
+    for i in range(n_months):
+        r = 0
+        for cls, w in class_weights.items():
+            bench_key = bench_map.get(cls, "cdi")
+            bench_r = BENCHMARK_HISTORY[bench_key][i]
+            if cls == "cripto":
+                bench_r *= 2.0  # crypto is more volatile
+            r += w * bench_r
+        monthly_returns.append(r)
+
+    # Scale the series so the cumulative 12M matches the stored client return
+    if target_12m_return is not None:
+        raw_cum = 1.0
+        for r in monthly_returns:
+            raw_cum *= (1 + r / 100)
+        raw_total = (raw_cum - 1) * 100
+        if abs(raw_total) > 0.01:
+            scale = target_12m_return / raw_total
+        else:
+            scale = 1.0
+        monthly_returns = [r * scale for r in monthly_returns]
+
+    return [round(r, 2) for r in monthly_returns]
+
+
 def metric_card(label: str, value: str, sub: str = "", accent: bool = False):
     """Render a metric card."""
     accent_class = "accent" if accent else ""
@@ -347,23 +402,32 @@ if page == "📊  Overview":
                 marker=dict(size=4),
             ))
 
-        # Client portfolio overlay
+        # Client portfolio overlay — historical monthly line
         if compare_client_id:
             compare_portfolio = st.session_state.all_holdings.get(compare_client_id)
             if compare_portfolio:
-                period_return_map = {"12M": "twelveMonthReturn", "YTD": "ytdReturn", "3M": "ytdReturn"}
-                client_return = compare_portfolio.get(period_return_map.get(timeframe, "twelveMonthReturn"), 0)
                 compare_name = client_name_map[compare_client_id]
-                fig.add_hline(
-                    y=client_return,
-                    line_dash="dash",
-                    line_color="#F59E0B",
-                    line_width=1.5,
-                    annotation_text=f" {compare_name}: {client_return:+.2f}%",
-                    annotation_position="bottom right",
-                    annotation_font_color="#F59E0B",
-                    annotation_font_size=11,
+                client_monthly = compute_client_monthly_history(
+                    compare_portfolio["holdings"],
+                    target_12m_return=compare_portfolio.get("twelveMonthReturn"),
                 )
+                # Trim to selected timeframe
+                client_monthly_trimmed = client_monthly[start_idx:]
+                # Build cumulative return series (same logic as benchmarks)
+                x_labels_client = ["Start"] + list(display_months)
+                y_client = [0.0]
+                running_c = 1.0
+                for r in client_monthly_trimmed:
+                    running_c *= (1 + r / 100)
+                    y_client.append(round((running_c - 1) * 100, 2))
+                fig.add_trace(go.Scatter(
+                    name=f"{compare_name} (portfolio)",
+                    x=x_labels_client,
+                    y=y_client,
+                    mode="lines+markers",
+                    line=dict(color="#F59E0B", width=2.5, dash="dash"),
+                    marker=dict(size=5, symbol="diamond"),
+                ))
 
         fig.add_hline(y=0, line_dash="dot", line_color="rgba(255,255,255,0.12)", line_width=1)
         fig.update_layout(
@@ -616,10 +680,30 @@ elif page == "📄  Reports":
                 st.markdown("---")
                 st.markdown("#### Letter Preview")
                 letter_text = letter.get("letter_text", "")
-                st.markdown(f"<span style='color:#6B7B8F;font-size:11px'>{letter.get('word_count', 0)} words</span>", unsafe_allow_html=True)
+                word_count = letter.get("word_count", 0)
+                st.markdown(f"<span style='color:#6B7B8F;font-size:11px'>{word_count} words</span>", unsafe_allow_html=True)
 
-                with st.container(height=400):
-                    st.markdown(letter_text)
+                # Render as a styled document preview
+                escaped_text = letter_text.replace("\n", "<br>")
+                st.markdown(
+                    f"""
+                    <div style="
+                        background: #ffffff;
+                        color: #1a1a1a;
+                        border-radius: 8px;
+                        padding: 32px 36px;
+                        margin: 8px 0 16px 0;
+                        max-height: 500px;
+                        overflow-y: auto;
+                        font-family: 'Georgia', 'Times New Roman', serif;
+                        font-size: 14px;
+                        line-height: 1.7;
+                        border: 1px solid rgba(255,255,255,0.1);
+                        box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+                    ">{escaped_text}</div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
                 # Download button
                 doc_info = results.get("document", {})
