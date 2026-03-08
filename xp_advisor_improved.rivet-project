@@ -1,0 +1,532 @@
+version: 4
+data:
+  attachedData:
+    trivet:
+      testSuites: []
+      version: 1
+  graphs:
+    # ─── MAIN ORCHESTRATOR GRAPH ───────────────────────────────────────────
+    main_orchestrator:
+      metadata:
+        description: "Main orchestrator graph that runs the 6-agent pipeline. Portfolio Analyst and Macro Analyst run in parallel, then Recommendation Engine, Letter Writer, Compliance Reviewer, and Doc Formatter run sequentially."
+        id: main_orchestrator
+        name: XP AAI Orchestrator
+      nodes:
+        # ─── INPUT NODES ───────────────────────────────────────────────────
+        '[input_portfolio]:text "Portfolio Data"':
+          data:
+            text: "{{portfolio_data}}"
+          outgoingConnections:
+            - output->"Subgraph" sg_portfolio_analyst/portfolio_data
+            - output->"Subgraph" sg_recommendation_engine/portfolio_data
+          visualData: 100/200/280/1//
+
+        '[input_risk_profile]:text "Risk Profile"':
+          data:
+            text: "{{risk_profile}}"
+          outgoingConnections:
+            - output->"Subgraph" sg_recommendation_engine/risk_profile
+            - output->"Subgraph" sg_letter_writer/risk_profile
+          visualData: 100/400/280/2//
+
+        '[input_macro_report]:text "Macro Report"':
+          data:
+            text: "{{macro_report}}"
+          outgoingConnections:
+            - output->"Subgraph" sg_macro_analyst/macro_report
+          visualData: 100/600/280/3//
+
+        '[input_profitability_csv]:text "Profitability CSV"':
+          data:
+            text: "{{profitability_csv}}"
+          outgoingConnections:
+            - output->"Subgraph" sg_portfolio_analyst/profitability_csv
+          visualData: 100/800/280/4//
+
+        # ─── AGENT 1: PORTFOLIO ANALYST (runs in parallel with Agent 2) ───
+        '[sg_portfolio_analyst]:subGraph "Portfolio Analyst"':
+          data:
+            graphId: agent_portfolio_analyst
+          outgoingConnections:
+            - output->"Subgraph" sg_recommendation_engine/portfolio_analysis
+            - output->"Subgraph" sg_letter_writer/portfolio_analysis
+          visualData: 500/300/300/5//
+
+        # ─── AGENT 2: MACRO ANALYST (runs in parallel with Agent 1) ──────
+        '[sg_macro_analyst]:subGraph "Macro Analyst"':
+          data:
+            graphId: agent_macro_analyst
+          outgoingConnections:
+            - output->"Subgraph" sg_recommendation_engine/macro_analysis
+            - output->"Subgraph" sg_letter_writer/macro_analysis
+          visualData: 500/600/300/6//
+
+        # ─── AGENT 3: RECOMMENDATION ENGINE ──────────────────────────────
+        '[sg_recommendation_engine]:subGraph "Recommendation Engine"':
+          data:
+            graphId: agent_recommendation_engine
+          outgoingConnections:
+            - output->"Subgraph" sg_letter_writer/recommendations
+          visualData: 900/450/300/7//
+
+        # ─── AGENT 4: LETTER WRITER ──────────────────────────────────────
+        '[sg_letter_writer]:subGraph "Letter Writer"':
+          data:
+            graphId: agent_letter_writer
+          outgoingConnections:
+            - output->"Subgraph" sg_compliance_reviewer/letter_text
+          visualData: 1300/450/300/8//
+
+        # ─── AGENT 5: COMPLIANCE REVIEWER ─────────────────────────────────
+        '[sg_compliance_reviewer]:subGraph "Compliance Reviewer"':
+          data:
+            graphId: agent_compliance_reviewer
+          outgoingConnections:
+            - output->"Subgraph" sg_doc_formatter/reviewed_letter
+          visualData: 1700/450/300/9//
+
+        # ─── AGENT 6: DOC FORMATTER ──────────────────────────────────────
+        '[sg_doc_formatter]:subGraph "Doc Formatter"':
+          data:
+            graphId: agent_doc_formatter
+          visualData: 2100/450/300/10//
+
+    # ─── SUBGRAPH: PORTFOLIO ANALYST ──────────────────────────────────────
+    agent_portfolio_analyst:
+      metadata:
+        description: "Parses portfolio data, calculates returns with code (not LLM), compares against CDI/IBOV benchmarks."
+        id: agent_portfolio_analyst
+        name: "Agent 1: Portfolio Analyst"
+      nodes:
+        '[pa_input_portfolio]:graphInput "Portfolio Data"':
+          data:
+            dataType: string
+            id: portfolio_data
+          outgoingConnections:
+            - data->"Code" pa_code_calc/input
+          visualData: 100/200/250/1//
+
+        '[pa_input_csv]:graphInput "Profitability CSV"':
+          data:
+            dataType: string
+            id: profitability_csv
+          outgoingConnections:
+            - data->"Code" pa_code_calc/csv_data
+          visualData: 100/400/250/2//
+
+        '[pa_code_calc]:code "Calculate Returns (Pandas)"':
+          data:
+            code: |
+              # This node represents the Python/pandas calculations
+              # that compute returns, P&L, allocation breakdown,
+              # and benchmark comparisons. In production, this uses
+              # actual pandas code — NOT the LLM.
+              # Input: portfolio_data (JSON), csv_data (CSV text)
+              # Output: structured JSON with all calculated metrics
+            language: javascript
+          outgoingConnections:
+            - output->"Prompt" pa_prompt/calculated_metrics
+          visualData: 450/300/300/3//
+
+        '[pa_prompt]:prompt "Summarize Portfolio"':
+          data:
+            enableFunctionCall: false
+            promptText: |
+              ## Portfolio Analysis Summary
+
+              You are a financial analyst. Summarize the following CALCULATED portfolio metrics.
+              IMPORTANT: Use ONLY the numbers provided below. Never invent or estimate figures.
+
+              ### Calculated Metrics:
+              {{calculated_metrics}}
+
+              ### Instructions:
+              - Highlight overall return vs CDI and IBOV benchmarks
+              - Flag any positions with extreme losses (>25%) or gains (>30%)
+              - Note the asset allocation breakdown
+              - Keep it factual and data-driven, max 200 words
+            type: user
+            useTypeInput: false
+          outgoingConnections:
+            - output->"Chat" pa_chat/prompt
+          visualData: 800/300/300/4//
+
+        '[pa_chat]:chat "Claude Opus 4.6"':
+          data:
+            cache: false
+            enableFunctionUse: false
+            maxTokens: 800
+            model: claude-opus-4-6
+            temperature: 0.2
+            top_p: 1
+            useAsGraphPartialOutput: false
+          outgoingConnections:
+            - response->"GraphOutput" pa_output/value
+          visualData: 1200/300/250/5//
+
+        '[pa_output]:graphOutput "Portfolio Analysis"':
+          data:
+            dataType: string
+            id: output
+          visualData: 1500/300/200/6//
+
+    # ─── SUBGRAPH: MACRO ANALYST ──────────────────────────────────────────
+    agent_macro_analyst:
+      metadata:
+        description: "Reads XP's macro report, extracts key projections (Selic, IPCA, GDP, FX), summarizes implications."
+        id: agent_macro_analyst
+        name: "Agent 2: Macro Analyst"
+      nodes:
+        '[ma_input]:graphInput "Macro Report"':
+          data:
+            dataType: string
+            id: macro_report
+          outgoingConnections:
+            - data->"Prompt" ma_prompt/macroeconomic_report
+          visualData: 100/300/250/1//
+
+        '[ma_prompt]:prompt "Analyze Macro"':
+          data:
+            enableFunctionCall: false
+            promptText: |
+              ## Macroeconomic Analysis
+
+              You are a senior macroeconomic analyst at XP Investimentos.
+              Analyze the monthly macro research report below and extract:
+
+              1. KEY PROJECTIONS: Selic path, IPCA forecast, GDP growth, BRL/USD, fiscal outlook
+              2. MARKET SENTIMENT: Assessment for each asset class
+              3. PORTFOLIO IMPLICATIONS: What this means for fixed income, equities, FIIs, international
+              4. RISK FACTORS: Top 3-5 risks to monitor
+
+              Keep it factual, data-driven, max 400 words.
+
+              ### Report:
+              {{macroeconomic_report}}
+            type: user
+            useTypeInput: false
+          outgoingConnections:
+            - output->"Chat" ma_chat/prompt
+          visualData: 450/300/300/2//
+
+        '[ma_chat]:chat "Claude Opus 4.6"':
+          data:
+            cache: false
+            enableFunctionUse: false
+            maxTokens: 1200
+            model: claude-opus-4-6
+            temperature: 0.2
+            top_p: 1
+            useAsGraphPartialOutput: false
+          outgoingConnections:
+            - response->"GraphOutput" ma_output/value
+          visualData: 850/300/250/3//
+
+        '[ma_output]:graphOutput "Macro Analysis"':
+          data:
+            dataType: string
+            id: output
+          visualData: 1150/300/200/4//
+
+    # ─── SUBGRAPH: RECOMMENDATION ENGINE ─────────────────────────────────
+    agent_recommendation_engine:
+      metadata:
+        description: "Compares current allocation vs target, flags drift >5%, generates CVM-compliant suggestions."
+        id: agent_recommendation_engine
+        name: "Agent 3: Recommendation Engine"
+      nodes:
+        '[re_input_pa]:graphInput "Portfolio Analysis"':
+          data:
+            dataType: string
+            id: portfolio_analysis
+          outgoingConnections:
+            - data->"Code" re_drift_calc/portfolio_analysis
+          visualData: 100/200/250/1//
+
+        '[re_input_ma]:graphInput "Macro Analysis"':
+          data:
+            dataType: string
+            id: macro_analysis
+          outgoingConnections:
+            - data->"Prompt" re_prompt/macro_context
+          visualData: 100/400/250/2//
+
+        '[re_input_rp]:graphInput "Risk Profile"':
+          data:
+            dataType: string
+            id: risk_profile
+          outgoingConnections:
+            - data->"Code" re_drift_calc/risk_profile
+          visualData: 100/600/250/3//
+
+        '[re_input_portfolio]:graphInput "Portfolio Data"':
+          data:
+            dataType: string
+            id: portfolio_data
+          outgoingConnections:
+            - data->"Code" re_drift_calc/portfolio_data
+          visualData: 100/800/250/4//
+
+        '[re_drift_calc]:code "Calculate Drift (Code)"':
+          data:
+            code: |
+              # Compare current allocation vs target for risk profile
+              # Flag drift > 5% per asset class
+              # Flag individual stocks with extreme returns
+              # Output: structured drift analysis JSON
+            language: javascript
+          outgoingConnections:
+            - output->"Prompt" re_prompt/drift_analysis
+          visualData: 450/400/300/5//
+
+        '[re_prompt]:prompt "Generate Recommendations"':
+          data:
+            enableFunctionCall: false
+            promptText: |
+              ## CVM-Compliant Recommendations
+
+              You are a CVM-compliant investment advisor at XP Investimentos.
+
+              CRITICAL RULES:
+              - NEVER use "compre", "venda", "recomendo a compra/venda"
+              - Use: "pode ser oportuno avaliar", "a alocação sugere ajuste"
+              - NEVER guarantee returns
+              - Always frame as analysis, not direct recommendations
+
+              ### Drift Analysis:
+              {{drift_analysis}}
+
+              ### Macro Context:
+              {{macro_context}}
+
+              Generate 3-5 specific rebalancing suggestions in Portuguese.
+              Max 300 words.
+            type: user
+            useTypeInput: false
+          outgoingConnections:
+            - output->"Chat" re_chat/prompt
+          visualData: 850/400/300/6//
+
+        '[re_chat]:chat "Claude Opus 4.6"':
+          data:
+            cache: false
+            enableFunctionUse: false
+            maxTokens: 1000
+            model: claude-opus-4-6
+            temperature: 0.3
+            top_p: 1
+            useAsGraphPartialOutput: false
+          outgoingConnections:
+            - response->"GraphOutput" re_output/value
+          visualData: 1250/400/250/7//
+
+        '[re_output]:graphOutput "Recommendations"':
+          data:
+            dataType: string
+            id: output
+          visualData: 1550/400/200/8//
+
+    # ─── SUBGRAPH: LETTER WRITER ─────────────────────────────────────────
+    agent_letter_writer:
+      metadata:
+        description: "Generates professional 2-page monthly letter in Portuguese from all agent outputs."
+        id: agent_letter_writer
+        name: "Agent 4: Letter Writer"
+      nodes:
+        '[lw_input_pa]:graphInput "Portfolio Analysis"':
+          data:
+            dataType: string
+            id: portfolio_analysis
+          outgoingConnections:
+            - data->"Prompt" lw_prompt/portfolio_analysis
+          visualData: 100/200/250/1//
+
+        '[lw_input_ma]:graphInput "Macro Analysis"':
+          data:
+            dataType: string
+            id: macro_analysis
+          outgoingConnections:
+            - data->"Prompt" lw_prompt/macro_analysis
+          visualData: 100/400/250/2//
+
+        '[lw_input_rec]:graphInput "Recommendations"':
+          data:
+            dataType: string
+            id: recommendations
+          outgoingConnections:
+            - data->"Prompt" lw_prompt/recommendations
+          visualData: 100/600/250/3//
+
+        '[lw_input_rp]:graphInput "Risk Profile"':
+          data:
+            dataType: string
+            id: risk_profile
+          outgoingConnections:
+            - data->"Prompt" lw_prompt/risk_profile
+          visualData: 100/800/250/4//
+
+        '[lw_prompt]:prompt "Write Letter"':
+          data:
+            enableFunctionCall: false
+            promptText: |
+              ## Monthly Investment Letter (Portuguese)
+
+              Write a professional monthly investment letter in Brazilian Portuguese.
+              Max 2 pages (~600 words). Letter format with paragraphs, not bullet points.
+
+              STRUCTURE:
+              1. Header: "Carta Mensal de Investimentos — Fevereiro/2026"
+              2. Greeting: "Prezado(a) [Name],"
+              3. Market context (1-2 paragraphs)
+              4. Portfolio performance with EXACT numbers from data
+              5. Positioning and outlook
+              6. CVM-compliant recommendations
+              7. Professional closing
+              8. Disclaimer
+
+              STYLE: Formal, warm, confident. CVM-compliant throughout.
+
+              ### Client Risk Profile:
+              {{risk_profile}}
+
+              ### Portfolio Analysis:
+              {{portfolio_analysis}}
+
+              ### Macro Analysis:
+              {{macro_analysis}}
+
+              ### Recommendations:
+              {{recommendations}}
+            type: user
+            useTypeInput: false
+          outgoingConnections:
+            - output->"Chat" lw_chat/prompt
+          visualData: 500/450/350/5//
+
+        '[lw_chat]:chat "Claude Opus 4.6"':
+          data:
+            cache: false
+            enableFunctionUse: false
+            maxTokens: 2000
+            model: claude-opus-4-6
+            temperature: 0.4
+            top_p: 1
+            useAsGraphPartialOutput: false
+          outgoingConnections:
+            - response->"GraphOutput" lw_output/value
+          visualData: 950/450/250/6//
+
+        '[lw_output]:graphOutput "Letter Text"':
+          data:
+            dataType: string
+            id: output
+          visualData: 1250/450/200/7//
+
+    # ─── SUBGRAPH: COMPLIANCE REVIEWER ────────────────────────────────────
+    agent_compliance_reviewer:
+      metadata:
+        description: "Reviews letter for CVM compliance. Quality gate that checks for prohibited language and missing elements."
+        id: agent_compliance_reviewer
+        name: "Agent 5: Compliance Reviewer"
+      nodes:
+        '[cr_input]:graphInput "Letter Text"':
+          data:
+            dataType: string
+            id: letter_text
+          outgoingConnections:
+            - data->"Prompt" cr_prompt/letter_text
+          visualData: 100/300/250/1//
+
+        '[cr_prompt]:prompt "Review Compliance"':
+          data:
+            enableFunctionCall: false
+            promptText: |
+              ## CVM Compliance Review
+
+              Review this investment letter for regulatory compliance:
+
+              CHECK FOR:
+              1. Direct buy/sell language ("compre", "venda", "recomendo a compra")
+              2. Guaranteed returns ("vai render", "garantido", "sem risco")
+              3. Missing disclaimer about risks
+              4. Misleading comparisons
+              5. Missing risk warnings
+              6. Aggressive/pressuring tone
+
+              OUTPUT: PASS/FAIL, list of violations, suggested fixes, score 0-100.
+
+              ### Letter:
+              {{letter_text}}
+            type: user
+            useTypeInput: false
+          outgoingConnections:
+            - output->"Chat" cr_chat/prompt
+          visualData: 450/300/350/2//
+
+        '[cr_chat]:chat "Claude Opus 4.6"':
+          data:
+            cache: false
+            enableFunctionUse: false
+            maxTokens: 800
+            model: claude-opus-4-6
+            temperature: 0.1
+            top_p: 1
+            useAsGraphPartialOutput: false
+          outgoingConnections:
+            - response->"If/Else" cr_gate/condition
+          visualData: 900/300/250/3//
+
+        '[cr_gate]:ifElse "Compliance Gate"':
+          data:
+            unconnectedControlFlowExcluded: true
+          outgoingConnections:
+            - output->"GraphOutput" cr_output/value
+          visualData: 1200/300/250/4//
+
+        '[cr_output]:graphOutput "Reviewed Letter"':
+          data:
+            dataType: string
+            id: output
+          visualData: 1500/300/200/5//
+
+    # ─── SUBGRAPH: DOC FORMATTER ─────────────────────────────────────────
+    agent_doc_formatter:
+      metadata:
+        description: "Generates professional .docx with XP branding using python-docx. Code only, no LLM."
+        id: agent_doc_formatter
+        name: "Agent 6: Doc Formatter"
+      nodes:
+        '[df_input]:graphInput "Reviewed Letter"':
+          data:
+            dataType: string
+            id: reviewed_letter
+          outgoingConnections:
+            - data->"Code" df_format/letter_text
+          visualData: 100/300/250/1//
+
+        '[df_format]:code "Format .docx (python-docx)"':
+          data:
+            code: |
+              # Uses python-docx to create a professionally formatted
+              # .docx file with:
+              # - XP Investimentos header and branding
+              # - Proper typography (Calibri, section headers)
+              # - CVM disclaimer in footer
+              # - Page margins and professional layout
+              # Output: .docx file path
+            language: javascript
+          outgoingConnections:
+            - output->"GraphOutput" df_output/value
+          visualData: 450/300/300/2//
+
+        '[df_output]:graphOutput "Document Path"':
+          data:
+            dataType: string
+            id: output
+          visualData: 800/300/200/3//
+
+  metadata:
+    description: "XP AAI Platform — Improved Rivet workflow with 6 specialized agents orchestrated in a pipeline. Portfolio Analyst and Macro Analyst run in parallel, followed by Recommendation Engine, Letter Writer, Compliance Reviewer, and Doc Formatter."
+    id: xp_advisor_improved
+    title: XP AAI Platform — Improved Workflow
+  plugins: []
