@@ -124,11 +124,13 @@ data:
 
         '[pa_code_calc]:code "Calculate Returns (Pandas)"':
           data:
+            inputNames: "input, csv_data"
+            outputNames: "output"
             code: |
               // In production, this runs Python/pandas to calculate
               // returns, P&L, allocation, and benchmark comparisons.
               // For the Rivet demo, we pass the portfolio data through.
-              return inputs.input;
+              return { output: { type: "string", value: inputs.input.value } };
             language: javascript
           outgoingConnections:
             - output->"Prompt" pa_prompt/calculated_metrics
@@ -275,11 +277,13 @@ data:
 
         '[re_drift_calc]:code "Calculate Drift (Code)"':
           data:
+            inputNames: "portfolio_analysis, risk_profile, portfolio_data"
+            outputNames: "output"
             code: |
               // In production, this compares current allocation vs target,
               // flags drift > 5% per asset class, and flags extreme returns.
               // For the Rivet demo, we pass the portfolio analysis through.
-              return inputs.portfolio_analysis;
+              return { output: { type: "string", value: inputs.portfolio_analysis.value } };
             language: javascript
           outgoingConnections:
             - output->"Prompt" re_prompt/drift_analysis
@@ -504,12 +508,14 @@ data:
 
         '[df_format]:code "Format .docx (python-docx)"':
           data:
+            inputNames: "letter_text"
+            outputNames: "output"
             code: |
               // In production, this uses python-docx to create a
               // professionally formatted .docx with XP branding,
               // Calibri typography, CVM disclaimer, and proper margins.
               // For the Rivet demo, we pass the letter text through.
-              return inputs.letter_text;
+              return { output: { type: "string", value: inputs.letter_text.value } };
             language: javascript
           outgoingConnections:
             - output->"GraphOutput" df_output/value
