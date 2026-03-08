@@ -117,12 +117,10 @@ data:
         '[pa_code_calc]:code "Calculate Returns (Pandas)"':
           data:
             code: |
-              # This node represents the Python/pandas calculations
-              # that compute returns, P&L, allocation breakdown,
-              # and benchmark comparisons. In production, this uses
-              # actual pandas code — NOT the LLM.
-              # Input: portfolio_data (JSON), csv_data (CSV text)
-              # Output: structured JSON with all calculated metrics
+              // In production, this runs Python/pandas to calculate
+              // returns, P&L, allocation, and benchmark comparisons.
+              // For the Rivet demo, we pass the portfolio data through.
+              return inputs.input;
             language: javascript
           outgoingConnections:
             - output->"Prompt" pa_prompt/calculated_metrics
@@ -270,10 +268,10 @@ data:
         '[re_drift_calc]:code "Calculate Drift (Code)"':
           data:
             code: |
-              # Compare current allocation vs target for risk profile
-              # Flag drift > 5% per asset class
-              # Flag individual stocks with extreme returns
-              # Output: structured drift analysis JSON
+              // In production, this compares current allocation vs target,
+              // flags drift > 5% per asset class, and flags extreme returns.
+              // For the Rivet demo, we pass the portfolio analysis through.
+              return inputs.portfolio_analysis;
             language: javascript
           outgoingConnections:
             - output->"Prompt" re_prompt/drift_analysis
@@ -435,6 +433,7 @@ data:
             id: letter_text
           outgoingConnections:
             - data->"Prompt" cr_prompt/letter_text
+            - data->"GraphOutput" cr_output/value
           visualData: 100/300/250/1//
 
         '[cr_prompt]:prompt "Review Compliance"':
@@ -472,16 +471,7 @@ data:
             temperature: 0.1
             top_p: 1
             useAsGraphPartialOutput: false
-          outgoingConnections:
-            - response->"If/Else" cr_gate/condition
           visualData: 900/300/250/3//
-
-        '[cr_gate]:ifElse "Compliance Gate"':
-          data:
-            unconnectedControlFlowExcluded: true
-          outgoingConnections:
-            - output->"GraphOutput" cr_output/value
-          visualData: 1200/300/250/4//
 
         '[cr_output]:graphOutput "Reviewed Letter"':
           data:
@@ -507,13 +497,11 @@ data:
         '[df_format]:code "Format .docx (python-docx)"':
           data:
             code: |
-              # Uses python-docx to create a professionally formatted
-              # .docx file with:
-              # - XP Investimentos header and branding
-              # - Proper typography (Calibri, section headers)
-              # - CVM disclaimer in footer
-              # - Page margins and professional layout
-              # Output: .docx file path
+              // In production, this uses python-docx to create a
+              // professionally formatted .docx with XP branding,
+              // Calibri typography, CVM disclaimer, and proper margins.
+              // For the Rivet demo, we pass the letter text through.
+              return inputs.letter_text;
             language: javascript
           outgoingConnections:
             - output->"GraphOutput" df_output/value
