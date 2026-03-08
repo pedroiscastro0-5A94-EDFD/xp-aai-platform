@@ -90,11 +90,16 @@ data:
         '[pa_http_calc]:httpCall "Calculate Portfolio (Python/Pandas)"':
           data:
             method: POST
+            useMethodInput: false
             url: "http://127.0.0.1:5050/api/portfolio-analysis"
+            useUrlInput: false
             headers: "Content-Type: application/json"
+            useHeadersInput: false
             body: '{"client_id": "cli_007"}'
+            useBodyInput: false
+            errorOnNon200: true
           outgoingConnections:
-            - response->"Prompt" pa_prompt/calculated_metrics
+            - res_body->"Prompt" pa_prompt/calculated_metrics
           visualData: 100/300/330/1//
 
         '[pa_prompt]:prompt "Summarize Portfolio"':
@@ -211,11 +216,16 @@ data:
         '[re_http_drift]:httpCall "Calculate Drift (Python/Pandas)"':
           data:
             method: POST
+            useMethodInput: false
             url: "http://127.0.0.1:5050/api/drift-analysis"
+            useUrlInput: false
             headers: "Content-Type: application/json"
+            useHeadersInput: false
             body: '{"client_id": "cli_007"}'
+            useBodyInput: false
+            errorOnNon200: true
           outgoingConnections:
-            - response->"Prompt" re_prompt/drift_analysis
+            - res_body->"Prompt" re_prompt/drift_analysis
           visualData: 100/200/330/1//
 
         '[re_input_ma]:graphInput "Macro Analysis"':
