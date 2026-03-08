@@ -13,16 +13,6 @@ data:
         name: XP AAI Orchestrator
       nodes:
         # ─── INPUT NODES ───────────────────────────────────────────────────
-        '[input_portfolio]:readFile "Portfolio Data"':
-          data:
-            path: "input/XP - Albert_s portfolio.txt"
-            usePathInput: false
-            errorOnMissingFile: false
-          outgoingConnections:
-            - content->"Subgraph" sg_portfolio_analyst/portfolio_data
-            - content->"Subgraph" sg_recommendation_engine/portfolio_data
-          visualData: 100/200/280/1//
-
         '[input_risk_profile]:readFile "Risk Profile"':
           data:
             path: "input/XP - Albert_s risk profile.txt"
@@ -31,7 +21,7 @@ data:
           outgoingConnections:
             - content->"Subgraph" sg_recommendation_engine/risk_profile
             - content->"Subgraph" sg_letter_writer/risk_profile
-          visualData: 100/400/280/2//
+          visualData: 100/400/280/1//
 
         '[input_macro_report]:readFile "Macro Report"':
           data:
@@ -40,25 +30,15 @@ data:
             errorOnMissingFile: false
           outgoingConnections:
             - content->"Subgraph" sg_macro_analyst/macro_report
-          visualData: 100/600/280/3//
-
-        '[input_profitability_csv]:readFile "Profitability CSV"':
-          data:
-            path: "input/profitability_calc_wip.csv"
-            usePathInput: false
-            errorOnMissingFile: false
-          outgoingConnections:
-            - content->"Subgraph" sg_portfolio_analyst/profitability_csv
-          visualData: 100/800/280/4//
+          visualData: 100/600/280/2//
 
         # ─── AGENT 1: PORTFOLIO ANALYST (runs in parallel with Agent 2) ───
         '[sg_portfolio_analyst]:subGraph "Portfolio Analyst"':
           data:
             graphId: agent_portfolio_analyst
           outgoingConnections:
-            - output->"Subgraph" sg_recommendation_engine/portfolio_analysis
             - output->"Subgraph" sg_letter_writer/portfolio_analysis
-          visualData: 500/300/300/5//
+          visualData: 500/300/300/3//
 
         # ─── AGENT 2: MACRO ANALYST (runs in parallel with Agent 1) ──────
         '[sg_macro_analyst]:subGraph "Macro Analyst"':
@@ -67,7 +47,7 @@ data:
           outgoingConnections:
             - output->"Subgraph" sg_recommendation_engine/macro_analysis
             - output->"Subgraph" sg_letter_writer/macro_analysis
-          visualData: 500/600/300/6//
+          visualData: 500/600/300/4//
 
         # ─── AGENT 3: RECOMMENDATION ENGINE ──────────────────────────────
         '[sg_recommendation_engine]:subGraph "Recommendation Engine"':
@@ -75,7 +55,7 @@ data:
             graphId: agent_recommendation_engine
           outgoingConnections:
             - output->"Subgraph" sg_letter_writer/recommendations
-          visualData: 900/450/300/7//
+          visualData: 900/450/300/5//
 
         # ─── AGENT 4: LETTER WRITER ──────────────────────────────────────
         '[sg_letter_writer]:subGraph "Letter Writer"':
@@ -83,7 +63,7 @@ data:
             graphId: agent_letter_writer
           outgoingConnections:
             - output->"Subgraph" sg_compliance_reviewer/letter_text
-          visualData: 1300/450/300/8//
+          visualData: 1300/450/300/6//
 
         # ─── AGENT 5: COMPLIANCE REVIEWER ─────────────────────────────────
         '[sg_compliance_reviewer]:subGraph "Compliance Reviewer"':
@@ -91,36 +71,31 @@ data:
             graphId: agent_compliance_reviewer
           outgoingConnections:
             - output->"Subgraph" sg_doc_formatter/reviewed_letter
-          visualData: 1700/450/300/9//
+          visualData: 1700/450/300/7//
 
         # ─── AGENT 6: DOC FORMATTER ──────────────────────────────────────
         '[sg_doc_formatter]:subGraph "Doc Formatter"':
           data:
             graphId: agent_doc_formatter
-          visualData: 2100/450/300/10//
+          visualData: 2100/450/300/8//
 
     # ─── SUBGRAPH: PORTFOLIO ANALYST ──────────────────────────────────────
     agent_portfolio_analyst:
       metadata:
-        description: "Parses portfolio data, calculates returns with code (not LLM), compares against CDI/IBOV benchmarks."
+        description: "Calls the Python API to calculate portfolio metrics with pandas, then uses GPT-4o to generate a narrative summary."
         id: agent_portfolio_analyst
         name: "Agent 1: Portfolio Analyst"
       nodes:
-        '[pa_input_portfolio]:graphInput "Portfolio Data"':
+        # HTTP Call to the Flask API — runs pandas calculations
+        '[pa_http_calc]:httpCall "Calculate Portfolio (Python/Pandas)"':
           data:
-            dataType: string
-            id: portfolio_data
+            method: POST
+            url: "http://127.0.0.1:5050/api/portfolio-analysis"
+            headers: "Content-Type: application/json"
+            body: '{"client_id": "cli_007"}'
           outgoingConnections:
-            - data->"Prompt" pa_prompt/calculated_metrics
-          visualData: 100/200/250/1//
-
-        '[pa_input_csv]:graphInput "Profitability CSV"':
-          data:
-            dataType: string
-            id: profitability_csv
-          outgoingConnections:
-            - data->"Prompt" pa_prompt/csv_metrics
-          visualData: 100/400/250/2//
+            - response->"Prompt" pa_prompt/calculated_metrics
+          visualData: 100/300/330/1//
 
         '[pa_prompt]:prompt "Summarize Portfolio"':
           data:
@@ -128,14 +103,14 @@ data:
             promptText: |
               ## Portfolio Analysis Summary
 
-              You are a financial analyst. Summarize the following CALCULATED portfolio metrics.
-              IMPORTANT: Use ONLY the numbers provided below. Never invent or estimate figures.
+              You are a financial analyst at XP Investimentos.
+              Summarize the following CALCULATED portfolio metrics.
 
-              ### Portfolio Data:
+              IMPORTANT: All numbers below were computed by Python/pandas code
+              and are EXACT. Use ONLY these numbers. Never invent or estimate figures.
+
+              ### Calculated Portfolio Metrics (JSON from Python API):
               {{calculated_metrics}}
-
-              ### Profitability Data:
-              {{csv_metrics}}
 
               ### Instructions:
               - Highlight overall return vs CDI and IBOV benchmarks
@@ -146,7 +121,7 @@ data:
             useTypeInput: false
           outgoingConnections:
             - output->"Chat" pa_chat/prompt
-          visualData: 450/300/300/3//
+          visualData: 500/300/350/2//
 
         '[pa_chat]:chat "GPT-4o"':
           data:
@@ -159,13 +134,13 @@ data:
             useAsGraphPartialOutput: false
           outgoingConnections:
             - response->"GraphOutput" pa_output/value
-          visualData: 850/300/250/4//
+          visualData: 900/300/250/3//
 
         '[pa_output]:graphOutput "Portfolio Analysis"':
           data:
             dataType: string
             id: output
-          visualData: 1150/300/200/5//
+          visualData: 1200/300/200/4//
 
     # ─── SUBGRAPH: MACRO ANALYST ──────────────────────────────────────────
     agent_macro_analyst:
@@ -228,17 +203,20 @@ data:
     # ─── SUBGRAPH: RECOMMENDATION ENGINE ─────────────────────────────────
     agent_recommendation_engine:
       metadata:
-        description: "Compares current allocation vs target, flags drift >5%, generates CVM-compliant suggestions."
+        description: "Calls the Python API for deterministic drift calculations, then uses GPT-4o to generate CVM-compliant suggestions."
         id: agent_recommendation_engine
         name: "Agent 3: Recommendation Engine"
       nodes:
-        '[re_input_pa]:graphInput "Portfolio Analysis"':
+        # HTTP Call to the Flask API — runs drift calculations
+        '[re_http_drift]:httpCall "Calculate Drift (Python/Pandas)"':
           data:
-            dataType: string
-            id: portfolio_analysis
+            method: POST
+            url: "http://127.0.0.1:5050/api/drift-analysis"
+            headers: "Content-Type: application/json"
+            body: '{"client_id": "cli_007"}'
           outgoingConnections:
-            - data->"Prompt" re_prompt/drift_analysis
-          visualData: 100/200/250/1//
+            - response->"Prompt" re_prompt/drift_analysis
+          visualData: 100/200/330/1//
 
         '[re_input_ma]:graphInput "Macro Analysis"':
           data:
@@ -246,7 +224,7 @@ data:
             id: macro_analysis
           outgoingConnections:
             - data->"Prompt" re_prompt/macro_context
-          visualData: 100/400/250/2//
+          visualData: 100/500/250/2//
 
         '[re_input_rp]:graphInput "Risk Profile"':
           data:
@@ -254,15 +232,7 @@ data:
             id: risk_profile
           outgoingConnections:
             - data->"Prompt" re_prompt/risk_context
-          visualData: 100/600/250/3//
-
-        '[re_input_portfolio]:graphInput "Portfolio Data"':
-          data:
-            dataType: string
-            id: portfolio_data
-          outgoingConnections:
-            - data->"Prompt" re_prompt/portfolio_raw
-          visualData: 100/800/250/4//
+          visualData: 100/700/250/3//
 
         '[re_prompt]:prompt "Generate Recommendations"':
           data:
@@ -278,11 +248,8 @@ data:
               - NEVER guarantee returns
               - Always frame as analysis, not direct recommendations
 
-              ### Portfolio Analysis (from Agent 1):
+              ### Drift Analysis (calculated by Python code — these numbers are EXACT):
               {{drift_analysis}}
-
-              ### Raw Portfolio Data:
-              {{portfolio_raw}}
 
               ### Client Risk Profile:
               {{risk_context}}
@@ -291,12 +258,13 @@ data:
               {{macro_context}}
 
               Generate 3-5 specific rebalancing suggestions in Portuguese.
+              Reference the exact drift percentages and amounts from the analysis.
               Max 300 words.
             type: user
             useTypeInput: false
           outgoingConnections:
             - output->"Chat" re_chat/prompt
-          visualData: 500/400/350/5//
+          visualData: 500/400/350/4//
 
         '[re_chat]:chat "GPT-4o"':
           data:
@@ -309,13 +277,13 @@ data:
             useAsGraphPartialOutput: false
           outgoingConnections:
             - response->"GraphOutput" re_output/value
-          visualData: 950/400/250/6//
+          visualData: 950/400/250/5//
 
         '[re_output]:graphOutput "Recommendations"':
           data:
             dataType: string
             id: output
-          visualData: 1250/400/200/7//
+          visualData: 1250/400/200/6//
 
     # ─── SUBGRAPH: LETTER WRITER ─────────────────────────────────────────
     agent_letter_writer:
@@ -494,7 +462,7 @@ data:
           visualData: 450/300/200/2//
 
   metadata:
-    description: "XP AAI Platform — Improved Rivet workflow with 6 specialized agents orchestrated in a pipeline. Portfolio Analyst and Macro Analyst run in parallel, followed by Recommendation Engine, Letter Writer, Compliance Reviewer, and Doc Formatter."
+    description: "XP AAI Platform — Improved Rivet workflow with 6 specialized agents. Portfolio calculations use a Python/Flask API (pandas) for deterministic results, while GPT-4o generates narrative text."
     id: xp_advisor_improved
     title: XP AAI Platform — Improved Workflow
   plugins: []
