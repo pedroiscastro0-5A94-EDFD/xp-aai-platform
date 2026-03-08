@@ -107,7 +107,7 @@ class LetterWriter:
             f"- Current allocation: {alloc_text}\n"
             f"- Number of positions: {portfolio_analysis.get('summary', {}).get('num_positions', 0)}\n\n"
             f"ALERTS:\n{alerts_text or 'None'}\n\n"
-            f"MONTHLY STOCK RETURNS (calculated from profitability CSV):\n"
+            f"MONTHLY STOCK RETURNS:\n"
             f"{monthly_changes_text or 'No CSV data available'}\n\n"
             f"MACRO CONTEXT:\n"
             f"- Selic: {key_proj.get('selic', {}).get('current', 14.25)}% ({key_proj.get('selic', {}).get('note', '')})\n"
@@ -178,17 +178,18 @@ class LetterWriter:
 
         letter = f"""Carta Mensal de Investimentos — Fevereiro/2026
 Prezado(a) {client['name']},
-Espero que esteja bem. Apresento a seguir o relatório mensal de sua carteira de investimentos, referente ao mês de fevereiro de 2026.
+Espero que esteja bem. Apresento a seguir o relatório mensal de sua carteira de investimentos, com os principais destaques do mês de fevereiro de 2026. Como sempre, nosso objetivo é manter você informado sobre o desempenho de seus investimentos e as perspectivas para os próximos meses.
 Cenário Macroeconômico
-O mês de fevereiro foi marcado por um cenário de cautela nos mercados. O Comitê de Política Monetária (Copom) elevou a taxa Selic para {key_proj.get('selic', {}).get('current', 14.25)}% ao ano, reforçando o compromisso com o controle da inflação, que acumula {key_proj.get('ipca', {}).get('twelve_month', 5.2)}% em 12 meses. A economia brasileira mostra sinais de desaceleração, com projeção de crescimento de {key_proj.get('gdp', {}).get('forecast_2025', 2.0)}% para 2025, ante {key_proj.get('gdp', {}).get('previous_year', 3.6)}% registrado em 2024. O câmbio operou com volatilidade, com o dólar cotado a R${key_proj.get('fx', {}).get('current', 5.85)}.
+O mês de fevereiro foi marcado por um cenário de cautela nos mercados. O Comitê de Política Monetária (Copom) manteve a taxa Selic em {key_proj.get('selic', {}).get('current', 14.25)}% ao ano, reforçando o compromisso com o controle da inflação, que acumula {key_proj.get('ipca', {}).get('twelve_month', 5.2)}% em 12 meses. No cenário doméstico, a economia brasileira projeta crescimento de {key_proj.get('gdp', {}).get('forecast_2025', 2.0)}% para 2025, enquanto o câmbio segue volátil, com o dólar cotado a R${key_proj.get('fx', {}).get('current', 5.85)}.
 Desempenho da Carteira
-Sua carteira apresentou rentabilidade de {monthly_ret:.2f}% no mês, {"superando" if vs_cdi > 0 else "ficando abaixo do"} o CDI de {cdi_monthly:.2f}% em {abs(vs_cdi):.2f} pontos percentuais. No acumulado do ano, o retorno é de {returns.get('ytd', 0):.2f}%, e nos últimos 12 meses, de {returns.get('twelve_month', 0):.2f}%.
-Rentabilidade Mensal das Ações (calculada automaticamente a partir do CSV):
+Sua carteira apresentou rentabilidade de {monthly_ret:.2f}% no mês, {"superando o" if vs_cdi > 0 else "ficando abaixo do"} CDI de {cdi_monthly:.2f}% em {abs(vs_cdi):.2f} pontos percentuais. No acumulado do ano, o retorno é de {returns.get('ytd', 0):.2f}%, e nos últimos 12 meses, de {returns.get('twelve_month', 0):.2f}%. A parcela de renda fixa continua sendo o principal motor de estabilidade da carteira, enquanto as posições em ações apresentaram desempenho misto no período.
+Rentabilidade Mensal das Ações
 {stock_returns_text}
 Posicionamento e Recomendações
+Com base na análise do seu perfil {profile_label} e nas condições atuais de mercado, destacamos os seguintes pontos de atenção:
 {rec_concise}
-Diante do cenário atual, seguimos atentos às oportunidades que possam surgir com a evolução do cenário.
-Permaneço à disposição para agendarmos uma conversa e discutirmos em mais detalhes o posicionamento de sua carteira.
+Seguimos monitorando o mercado e avaliando oportunidades que possam contribuir para a evolução da sua carteira, sempre respeitando seu perfil de risco e objetivos de investimento.
+Permaneço à disposição para agendarmos uma conversa e discutirmos em mais detalhes o posicionamento de sua carteira. Não hesite em entrar em contato caso tenha qualquer dúvida.
 Atenciosamente,
 {AAI_PROFILE['name']}
 {AAI_PROFILE['cnpi']}

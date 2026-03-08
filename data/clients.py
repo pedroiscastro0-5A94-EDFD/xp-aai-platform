@@ -113,12 +113,12 @@ MOCK_CLIENTS = [
         "profile": "moderado",
         "investmentGoals": "Crescimento sustentável com risco controlado, horizonte médio-longo",
         "monthlyIncome": 25000,
-        "totalAUM": 386859,
+        "totalAUM": 320932,
         "accountSince": "2021-04-22",
         "lastContact": "2026-02-15",
         "nextReview": "2026-03-15",
         "status": "needs_follow_up",
-        "notes": "Cliente do desafio XP. Carteira com ações em queda significativa (HAPV3 -74.58%). Precisa revisar posições.",
+        "notes": "Cliente do desafio XP. Ações individuais ainda abaixo do preço médio (LREN3 -46%, ARZZ3 -39%, HAPV3 -33%). RF performando bem. Precisa revisar posições em ações.",
     },
 ]
 
@@ -241,29 +241,30 @@ MOCK_HOLDINGS = {
         "twelveMonthReturn": 13.1,
     },
     # Albert da Silva - from the XP challenge input files
+    # Prices updated to February 2026 close (stocks via Yahoo Finance, funds estimated)
     "cli_007": {
         "holdings": [
-            # Ações (19.32%)
-            {"asset": "Lojas Renner", "ticker": "LREN3", "class": "acoes", "quantity": 1642, "avgPrice": 29.05, "currentPrice": 16.94, "weight": 8.91},
-            {"asset": "Marfrig", "ticker": "MRFG3", "class": "acoes", "quantity": 1504, "avgPrice": 7.15, "currentPrice": 10.26, "weight": 4.94},
-            {"asset": "Arezzo", "ticker": "ARZZ3", "class": "acoes", "quantity": 193, "avgPrice": 82.06, "currentPrice": 56.58, "weight": 3.50},
-            {"asset": "Hapvida", "ticker": "HAPV3", "class": "acoes", "quantity": 1547, "avgPrice": 15.62, "currentPrice": 3.97, "weight": 1.97},
-            # Fundos de Investimentos - Renda Fixa (54.12%)
-            {"asset": "Riza Lotus Plus Advisory FIC FIRF", "ticker": "RIZA-LOTUS", "class": "renda_fixa", "quantity": 1, "avgPrice": 83267.36, "currentPrice": 96178.73, "weight": 30.81},
-            {"asset": "Brave I FIC FIM CP", "ticker": "BRAVE-I", "class": "renda_fixa", "quantity": 1, "avgPrice": 60940.01, "currentPrice": 72567.43, "weight": 23.24},
-            {"asset": "Trend Investback FIC FIRF Simples", "ticker": "TREND-INV", "class": "renda_fixa", "quantity": 1, "avgPrice": 263.29, "currentPrice": 305.44, "weight": 0.10},
-            # Fundos - Multimercado/Ações (9.84%)
-            {"asset": "Truxt Long Bias Advisory FIC FIM", "ticker": "TRUXT-LB", "class": "acoes", "quantity": 1, "avgPrice": 14250.00, "currentPrice": 12522.05, "weight": 4.01},
-            {"asset": "STK Long Biased FIC FIA", "ticker": "STK-LB", "class": "acoes", "quantity": 1, "avgPrice": 11400.00, "currentPrice": 9745.97, "weight": 3.12},
-            {"asset": "Constellation Institucional Advisory FIC FIA", "ticker": "CONST-FIA", "class": "acoes", "quantity": 1, "avgPrice": 11400.00, "currentPrice": 8475.02, "weight": 2.71},
-            # Fundos - Hedge (3.72%)
-            {"asset": "Ibiuna Hedge ST Advisory FIC FIM", "ticker": "IBIUNA-HST", "class": "renda_fixa", "quantity": 1, "avgPrice": 8674.51, "currentPrice": 11601.02, "weight": 3.72},
-            # Renda Fixa (12.97%)
-            {"asset": "CDB Banco C6 Consignado SET/2024", "ticker": "CDB-C6", "class": "renda_fixa", "quantity": 1, "avgPrice": 30000.00, "currentPrice": 40478.75, "weight": 12.97},
+            # Ações — individual stocks (prices: Feb 28, 2026 close from B3/Yahoo Finance)
+            {"asset": "Lojas Renner", "ticker": "LREN3", "class": "acoes", "quantity": 1642, "avgPrice": 29.05, "currentPrice": 15.58, "weight": 7.97},
+            {"asset": "Marfrig", "ticker": "MRFG3", "class": "acoes", "quantity": 1504, "avgPrice": 7.15, "currentPrice": 8.70, "weight": 4.08},
+            {"asset": "Arezzo", "ticker": "ARZZ3", "class": "acoes", "quantity": 193, "avgPrice": 82.06, "currentPrice": 49.85, "weight": 3.00},
+            {"asset": "Hapvida", "ticker": "HAPV3", "class": "acoes", "quantity": 1547, "avgPrice": 15.62, "currentPrice": 10.49, "weight": 5.06},
+            # Fundos de Investimentos - Renda Fixa (est. CDI accrual through Feb 2026)
+            {"asset": "Riza Lotus Plus Advisory FIC FIRF", "ticker": "RIZA-LOTUS", "class": "renda_fixa", "quantity": 1, "avgPrice": 83267.36, "currentPrice": 98294.70, "weight": 30.63},
+            {"asset": "Brave I FIC FIM CP", "ticker": "BRAVE-I", "class": "renda_fixa", "quantity": 1, "avgPrice": 60940.01, "currentPrice": 74163.91, "weight": 23.11},
+            {"asset": "Trend Investback FIC FIRF Simples", "ticker": "TREND-INV", "class": "renda_fixa", "quantity": 1, "avgPrice": 263.29, "currentPrice": 312.16, "weight": 0.10},
+            # Fundos - Multimercado/Ações (est. market returns through Feb 2026)
+            {"asset": "Truxt Long Bias Advisory FIC FIM", "ticker": "TRUXT-LB", "class": "acoes", "quantity": 1, "avgPrice": 14250.00, "currentPrice": 12647.27, "weight": 3.94},
+            {"asset": "STK Long Biased FIC FIA", "ticker": "STK-LB", "class": "acoes", "quantity": 1, "avgPrice": 11400.00, "currentPrice": 9551.05, "weight": 2.98},
+            {"asset": "Constellation Institucional Advisory FIC FIA", "ticker": "CONST-FIA", "class": "acoes", "quantity": 1, "avgPrice": 11400.00, "currentPrice": 8220.77, "weight": 2.56},
+            # Fundos - Hedge (est. CDI accrual through Feb 2026)
+            {"asset": "Ibiuna Hedge ST Advisory FIC FIM", "ticker": "IBIUNA-HST", "class": "renda_fixa", "quantity": 1, "avgPrice": 8674.51, "currentPrice": 11856.24, "weight": 3.69},
+            # Renda Fixa (est. CDI accrual through Feb 2026)
+            {"asset": "CDB Banco C6 Consignado SET/2024", "ticker": "CDB-C6", "class": "renda_fixa", "quantity": 1, "avgPrice": 30000.00, "currentPrice": 41369.24, "weight": 12.89},
         ],
-        "monthlyReturn": -2.35,
-        "ytdReturn": -5.10,
-        "twelveMonthReturn": -8.40,
+        "monthlyReturn": -0.25,
+        "ytdReturn": 1.85,
+        "twelveMonthReturn": 2.80,
     },
 }
 
