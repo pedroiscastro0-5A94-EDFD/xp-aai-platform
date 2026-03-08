@@ -369,16 +369,6 @@ if page == "📊  Overview":
                 label_visibility="collapsed",
             )
 
-        # Row 2: Optional client portfolio overlay
-        client_options_ids = [None] + [c["id"] for c in st.session_state.all_clients]
-        client_name_map = {c["id"]: c["name"] for c in st.session_state.all_clients}
-        compare_client_id = st.selectbox(
-            "Compare with client",
-            options=client_options_ids,
-            format_func=lambda x: "Compare with a client portfolio →" if x is None else f"📊 {client_name_map[x]}",
-            label_visibility="collapsed",
-        )
-
         timeframe_start = {"3M": 9, "6M": 6, "12M": 0}
         start_idx = timeframe_start.get(timeframe, 0)
         display_months = BENCHMARK_HISTORY["months"][start_idx:]
@@ -401,33 +391,6 @@ if page == "📊  Overview":
                 line=dict(color=bench_colors.get(bench, "#999"), width=2),
                 marker=dict(size=4),
             ))
-
-        # Client portfolio overlay — historical monthly line
-        if compare_client_id:
-            compare_portfolio = st.session_state.all_holdings.get(compare_client_id)
-            if compare_portfolio:
-                compare_name = client_name_map[compare_client_id]
-                client_monthly = compute_client_monthly_history(
-                    compare_portfolio["holdings"],
-                    target_12m_return=compare_portfolio.get("twelveMonthReturn"),
-                )
-                # Trim to selected timeframe
-                client_monthly_trimmed = client_monthly[start_idx:]
-                # Build cumulative return series (same logic as benchmarks)
-                x_labels_client = ["Start"] + list(display_months)
-                y_client = [0.0]
-                running_c = 1.0
-                for r in client_monthly_trimmed:
-                    running_c *= (1 + r / 100)
-                    y_client.append(round((running_c - 1) * 100, 2))
-                fig.add_trace(go.Scatter(
-                    name=f"{compare_name} (portfolio)",
-                    x=x_labels_client,
-                    y=y_client,
-                    mode="lines+markers",
-                    line=dict(color="#F59E0B", width=2.5, dash="dash"),
-                    marker=dict(size=5, symbol="diamond"),
-                ))
 
         fig.add_hline(y=0, line_dash="dot", line_color="rgba(255,255,255,0.12)", line_width=1)
         fig.update_layout(
