@@ -111,7 +111,7 @@ data:
             dataType: string
             id: portfolio_data
           outgoingConnections:
-            - data->"Code" pa_code_calc/input
+            - data->"Prompt" pa_prompt/calculated_metrics
           visualData: 100/200/250/1//
 
         '[pa_input_csv]:graphInput "Profitability CSV"':
@@ -119,22 +119,8 @@ data:
             dataType: string
             id: profitability_csv
           outgoingConnections:
-            - data->"Code" pa_code_calc/csv_data
+            - data->"Prompt" pa_prompt/csv_metrics
           visualData: 100/400/250/2//
-
-        '[pa_code_calc]:code "Calculate Returns (Pandas)"':
-          data:
-            inputNames: "input, csv_data"
-            outputNames: "output"
-            code: |
-              // In production, this runs Python/pandas to calculate
-              // returns, P&L, allocation, and benchmark comparisons.
-              // For the Rivet demo, we pass the portfolio data through.
-              return { output: { type: "string", value: inputs.input.value } };
-            language: javascript
-          outgoingConnections:
-            - output->"Prompt" pa_prompt/calculated_metrics
-          visualData: 450/300/300/3//
 
         '[pa_prompt]:prompt "Summarize Portfolio"':
           data:
@@ -145,8 +131,11 @@ data:
               You are a financial analyst. Summarize the following CALCULATED portfolio metrics.
               IMPORTANT: Use ONLY the numbers provided below. Never invent or estimate figures.
 
-              ### Calculated Metrics:
+              ### Portfolio Data:
               {{calculated_metrics}}
+
+              ### Profitability Data:
+              {{csv_metrics}}
 
               ### Instructions:
               - Highlight overall return vs CDI and IBOV benchmarks
@@ -157,7 +146,7 @@ data:
             useTypeInput: false
           outgoingConnections:
             - output->"Chat" pa_chat/prompt
-          visualData: 800/300/300/4//
+          visualData: 450/300/300/3//
 
         '[pa_chat]:chat "GPT-4o"':
           data:
@@ -170,13 +159,13 @@ data:
             useAsGraphPartialOutput: false
           outgoingConnections:
             - response->"GraphOutput" pa_output/value
-          visualData: 1200/300/250/5//
+          visualData: 850/300/250/4//
 
         '[pa_output]:graphOutput "Portfolio Analysis"':
           data:
             dataType: string
             id: output
-          visualData: 1500/300/200/6//
+          visualData: 1150/300/200/5//
 
     # ─── SUBGRAPH: MACRO ANALYST ──────────────────────────────────────────
     agent_macro_analyst:
@@ -248,7 +237,7 @@ data:
             dataType: string
             id: portfolio_analysis
           outgoingConnections:
-            - data->"Code" re_drift_calc/portfolio_analysis
+            - data->"Prompt" re_prompt/drift_analysis
           visualData: 100/200/250/1//
 
         '[re_input_ma]:graphInput "Macro Analysis"':
@@ -264,7 +253,7 @@ data:
             dataType: string
             id: risk_profile
           outgoingConnections:
-            - data->"Code" re_drift_calc/risk_profile
+            - data->"Prompt" re_prompt/risk_context
           visualData: 100/600/250/3//
 
         '[re_input_portfolio]:graphInput "Portfolio Data"':
@@ -272,22 +261,8 @@ data:
             dataType: string
             id: portfolio_data
           outgoingConnections:
-            - data->"Code" re_drift_calc/portfolio_data
+            - data->"Prompt" re_prompt/portfolio_raw
           visualData: 100/800/250/4//
-
-        '[re_drift_calc]:code "Calculate Drift (Code)"':
-          data:
-            inputNames: "portfolio_analysis, risk_profile, portfolio_data"
-            outputNames: "output"
-            code: |
-              // In production, this compares current allocation vs target,
-              // flags drift > 5% per asset class, and flags extreme returns.
-              // For the Rivet demo, we pass the portfolio analysis through.
-              return { output: { type: "string", value: inputs.portfolio_analysis.value } };
-            language: javascript
-          outgoingConnections:
-            - output->"Prompt" re_prompt/drift_analysis
-          visualData: 450/400/300/5//
 
         '[re_prompt]:prompt "Generate Recommendations"':
           data:
@@ -303,10 +278,16 @@ data:
               - NEVER guarantee returns
               - Always frame as analysis, not direct recommendations
 
-              ### Drift Analysis:
+              ### Portfolio Analysis (from Agent 1):
               {{drift_analysis}}
 
-              ### Macro Context:
+              ### Raw Portfolio Data:
+              {{portfolio_raw}}
+
+              ### Client Risk Profile:
+              {{risk_context}}
+
+              ### Macro Context (from Agent 2):
               {{macro_context}}
 
               Generate 3-5 specific rebalancing suggestions in Portuguese.
@@ -315,7 +296,7 @@ data:
             useTypeInput: false
           outgoingConnections:
             - output->"Chat" re_chat/prompt
-          visualData: 850/400/300/6//
+          visualData: 500/400/350/5//
 
         '[re_chat]:chat "GPT-4o"':
           data:
@@ -328,13 +309,13 @@ data:
             useAsGraphPartialOutput: false
           outgoingConnections:
             - response->"GraphOutput" re_output/value
-          visualData: 1250/400/250/7//
+          visualData: 950/400/250/6//
 
         '[re_output]:graphOutput "Recommendations"':
           data:
             dataType: string
             id: output
-          visualData: 1550/400/200/8//
+          visualData: 1250/400/200/7//
 
     # ─── SUBGRAPH: LETTER WRITER ─────────────────────────────────────────
     agent_letter_writer:
@@ -494,7 +475,7 @@ data:
     # ─── SUBGRAPH: DOC FORMATTER ─────────────────────────────────────────
     agent_doc_formatter:
       metadata:
-        description: "Generates professional .docx with XP branding using python-docx. Code only, no LLM."
+        description: "Formats the final letter output. In production, uses python-docx for professional .docx with XP branding."
         id: agent_doc_formatter
         name: "Agent 6: Doc Formatter"
       nodes:
@@ -503,29 +484,14 @@ data:
             dataType: string
             id: reviewed_letter
           outgoingConnections:
-            - data->"Code" df_format/letter_text
+            - data->"GraphOutput" df_output/value
           visualData: 100/300/250/1//
 
-        '[df_format]:code "Format .docx (python-docx)"':
-          data:
-            inputNames: "letter_text"
-            outputNames: "output"
-            code: |
-              // In production, this uses python-docx to create a
-              // professionally formatted .docx with XP branding,
-              // Calibri typography, CVM disclaimer, and proper margins.
-              // For the Rivet demo, we pass the letter text through.
-              return { output: { type: "string", value: inputs.letter_text.value } };
-            language: javascript
-          outgoingConnections:
-            - output->"GraphOutput" df_output/value
-          visualData: 450/300/300/2//
-
-        '[df_output]:graphOutput "Document Path"':
+        '[df_output]:graphOutput "Final Document"':
           data:
             dataType: string
             id: output
-          visualData: 800/300/200/3//
+          visualData: 450/300/200/2//
 
   metadata:
     description: "XP AAI Platform — Improved Rivet workflow with 6 specialized agents orchestrated in a pipeline. Portfolio Analyst and Macro Analyst run in parallel, followed by Recommendation Engine, Letter Writer, Compliance Reviewer, and Doc Formatter."
