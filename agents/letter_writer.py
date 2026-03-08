@@ -177,37 +177,23 @@ class LetterWriter:
         rec_concise = "\n".join(rec_lines[:5]) if rec_lines else "Carteira alinhada ao perfil."
 
         letter = f"""Carta Mensal de Investimentos — Fevereiro/2026
-
 Prezado(a) {client['name']},
-
 Espero que esteja bem. Apresento a seguir o relatório mensal de sua carteira de investimentos, referente ao mês de fevereiro de 2026.
-
 Cenário Macroeconômico
-
 O mês de fevereiro foi marcado por um cenário de cautela nos mercados. O Comitê de Política Monetária (Copom) elevou a taxa Selic para {key_proj.get('selic', {}).get('current', 14.25)}% ao ano, reforçando o compromisso com o controle da inflação, que acumula {key_proj.get('ipca', {}).get('twelve_month', 5.2)}% em 12 meses. A economia brasileira mostra sinais de desaceleração, com projeção de crescimento de {key_proj.get('gdp', {}).get('forecast_2025', 2.0)}% para 2025, ante {key_proj.get('gdp', {}).get('previous_year', 3.6)}% registrado em 2024. O câmbio operou com volatilidade, com o dólar cotado a R${key_proj.get('fx', {}).get('current', 5.85)}.
-
 Desempenho da Carteira
-
 Sua carteira apresentou rentabilidade de {monthly_ret:.2f}% no mês, {"superando" if vs_cdi > 0 else "ficando abaixo do"} o CDI de {cdi_monthly:.2f}% em {abs(vs_cdi):.2f} pontos percentuais. No acumulado do ano, o retorno é de {returns.get('ytd', 0):.2f}%, e nos últimos 12 meses, de {returns.get('twelve_month', 0):.2f}%.
-
 Rentabilidade Mensal das Ações (calculada automaticamente a partir do CSV):
-
 {stock_returns_text}
 Posicionamento e Recomendações
-
 {rec_concise}
-
 Diante do cenário atual, seguimos atentos às oportunidades que possam surgir com a evolução do cenário.
-
 Permaneço à disposição para agendarmos uma conversa e discutirmos em mais detalhes o posicionamento de sua carteira.
-
 Atenciosamente,
-
 {AAI_PROFILE['name']}
 {AAI_PROFILE['cnpi']}
 {AAI_PROFILE['office']}
 {AAI_PROFILE['phone']}
-
 ---
 {AAI_PROFILE['disclaimer']}"""
 
