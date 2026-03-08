@@ -10,11 +10,13 @@
 3. [Agent Deep Dives](#3-agent-deep-dives)
 4. [Prompt Engineering Decisions](#4-prompt-engineering-decisions)
 5. [Code & Technology Decisions](#5-code--technology-decisions)
-6. [Platform Features — Add Client & Dynamic Management](#6-platform-features--add-client--dynamic-management)
-7. [Deployment — GitHub & Streamlit Cloud](#7-deployment--github--streamlit-cloud)
-8. [Results Comparison: Before vs After](#8-results-comparison-before-vs-after)
-9. [The 3 Interview Questions — Polished Answers](#9-the-3-interview-questions--polished-answers)
-10. [Talking Points & Anticipated Questions](#10-talking-points--anticipated-questions)
+6. [Rivet Workflow — Improved Architecture](#6-rivet-workflow--improved-architecture)
+7. [Flask API — Real-Time Calculations](#7-flask-api--real-time-calculations)
+8. [Platform Features — Add Client & Dynamic Management](#8-platform-features--add-client--dynamic-management)
+9. [Deployment — GitHub & Streamlit Cloud](#9-deployment--github--streamlit-cloud)
+10. [Results Comparison: Before vs After](#10-results-comparison-before-vs-after)
+11. [The 3 Interview Questions — Polished Answers](#11-the-3-interview-questions--polished-answers)
+12. [Talking Points & Anticipated Questions](#12-talking-points--anticipated-questions)
 
 ---
 
@@ -237,7 +239,96 @@ The key insight: Portfolio and Macro analysis are **independent** — they don't
 
 ---
 
-## 6. Platform Features — Add Client & Dynamic Management
+## 6. Rivet Workflow — Improved Architecture
+
+### What Changed from the Original
+The original Rivet graph was rewritten from scratch as `xp_advisor_improved.rivet-project` with a 6-subgraph pipeline:
+
+```
+MAIN ORCHESTRATOR:
+  [Text Node: Portfolio JSON] ──→ Portfolio Analyst subgraph ──→ Letter Writer
+  [Text Node: Drift JSON]    ──→ Recommendation Engine      ──→ Letter Writer
+  [ReadFile: Risk Profile]   ──→ Recommendation Engine      ──→ Letter Writer
+  [ReadFile: Macro Report]   ──→ Macro Analyst              ──→ Letter Writer
+                                                                    ↓
+                                                            Compliance Reviewer
+                                                                    ↓
+                                                            Doc Formatter
+```
+
+### Pre-Calculated JSON Approach (Demo)
+Financial metrics are pre-calculated by Python/pandas and embedded in **Text nodes** as JSON. This guarantees:
+- **Deterministic numbers** — every figure in the letter is calculated by code, not the LLM
+- **Reliable demo** — no external dependencies (no server needed to run the Rivet graph)
+- **Monthly stock profitability** from the CSV is included (`monthly_change_pct` field per position)
+
+The Text nodes contain the EXACT JSON output from `PortfolioAnalyst.run()` with the profitability CSV, including:
+- Per-position P&L, market value, weight
+- Monthly stock price changes calculated from `profitability_calc_wip.csv`
+- Allocation breakdown by asset class
+- Benchmark comparison (vs CDI, IBOVESPA)
+- Extreme performer alerts (losses > -25%, gains > +30%)
+
+### Subgraph Design (All Prompts in English)
+Each subgraph follows: **GraphInput → Prompt → GPT-4o Chat → GraphOutput**
+
+| Subgraph | Input | Prompt Focus | Temperature |
+|----------|-------|-------------|-------------|
+| Portfolio Analyst | Pre-calculated JSON | Summarize metrics, highlight monthly returns | 0.2 |
+| Macro Analyst | XP macro report file | Extract Selic, IPCA, GDP projections | 0.2 |
+| Recommendation Engine | Drift JSON + macro + risk profile | CVM-compliant rebalancing suggestions | 0.3 |
+| Letter Writer | All 5 inputs from above | Professional Portuguese letter, max 2 pages | 0.4 |
+| Compliance Reviewer | Letter text | CVM compliance check, score 0-100 | 0.1 |
+| Doc Formatter | Reviewed letter | Passthrough (in production: python-docx) | N/A |
+
+### Why Text Nodes Instead of Code/httpCall?
+We tried three approaches:
+1. **Code nodes** — Failed. Rivet Code nodes run sandboxed JavaScript, not Python. No pandas, no fetch().
+2. **httpCall nodes** — Failed. While Rivet supports httpCall, the YAML format is undocumented for hand-editing and nodes produced persistent errors.
+3. **Text nodes with pre-calculated JSON** — Works reliably. All financial data is deterministic (from pandas), and the graph runs without any external server.
+
+**For a production deployment**, the Text nodes would be replaced by httpCall nodes calling the Flask API (`api_server.py`) for real-time calculations. The API exists and works — it's included in the repo.
+
+### How to Talk About This in the Interview
+> "We took a pragmatic approach for the demo: pre-calculate all financial metrics with Python/pandas and embed them as JSON in the Rivet graph. This guarantees 100% deterministic numbers while keeping the demo reliable. For production, we built a Flask API (`api_server.py`) that wraps the same pandas calculations — the Rivet graph would call it via httpCall nodes for real-time data."
+
+---
+
+## 7. Flask API — Real-Time Calculations
+
+### What It Is
+`api_server.py` is a lightweight Flask API that wraps the existing Python/pandas calculations so they can be called via HTTP (by Rivet, Streamlit, or any other client).
+
+### Endpoints
+
+| Endpoint | Method | What It Does |
+|----------|--------|-------------|
+| `/api/health` | GET | Health check → `{"status": "ok"}` |
+| `/api/clients` | GET | Lists all 7 clients (id, name, profile) |
+| `/api/portfolio-analysis` | POST | Runs `PortfolioAnalyst.run()` → full JSON with P&L, allocation, benchmarks, monthly returns |
+| `/api/drift-analysis` | POST | Calculates drift vs target allocation → drift per asset class, positions to review |
+
+### How to Run
+```bash
+python api_server.py
+# Runs on http://127.0.0.1:5050
+
+# Test:
+curl http://127.0.0.1:5050/api/health
+curl -X POST http://127.0.0.1:5050/api/portfolio-analysis \
+  -H "Content-Type: application/json" \
+  -d '{"client_id": "cli_007"}'
+```
+
+### Why It Exists
+- Bridges the gap between Python/pandas (where the math lives) and Rivet (visual workflow tool)
+- In production, Rivet's httpCall nodes would call these endpoints for real-time data
+- Can also be used by any frontend (React, mobile app) or other workflow tools
+- Reads the profitability CSV directly, so monthly stock returns are always fresh
+
+---
+
+## 8. Platform Features — Add Client & Dynamic Management
 
 ### The Problem
 The original demo had static mock clients hardcoded in `data/clients.py`. An advisor couldn't add new clients — the platform was read-only. In a real tool, advisors onboard new clients constantly. This was a huge gap between "demo" and "real tool."
@@ -311,7 +402,7 @@ This is a clean pattern that solves the Streamlit widget persistence problem wit
 
 ---
 
-## 7. Deployment — GitHub & Streamlit Cloud
+## 9. Deployment — GitHub & Streamlit Cloud
 
 ### What We Did
 The platform is deployed as a **live web app** accessible via URL — no installation needed.
@@ -346,7 +437,7 @@ drive-download-*/  # Temporary download folders
 
 ---
 
-## 8. Results Comparison: Before vs After
+## 10. Results Comparison: Before vs After
 
 ### Original MVP Letter Problems
 1. Numbers might be hallucinated (no calculation layer)
@@ -373,7 +464,7 @@ drive-download-*/  # Temporary download folders
 
 ---
 
-## 9. The 3 Interview Questions — Polished Answers
+## 11. The 3 Interview Questions — Polished Answers
 
 ### Q1: What are the main issues with the first version?
 
@@ -440,7 +531,7 @@ Instead of hoping the LLM produces compliant text, I built compliance into the a
 
 ---
 
-## 10. Talking Points & Anticipated Questions
+## 12. Talking Points & Anticipated Questions
 
 ### Key Things to Highlight
 1. **"Code for math, LLM for language"** — This is the headline design decision. Lead with it.
@@ -501,10 +592,11 @@ xp-challenge/
 │   ├── monthly_report_albert.docx   # Albert's monthly letter
 │   └── workflow_report.docx         # Answers to 3 questions
 ├── .streamlit/config.toml           # Streamlit theme config
+├── api_server.py                    # Flask API for real-time calculations (port 5050)
 ├── app.py                           # Streamlit AAI Platform (5 pages + Add Client)
 ├── orchestrator.py                  # Agent pipeline orchestrator
-├── requirements.txt                 # Python dependencies
-├── xp_advisor_improved.rivet-project # Improved Rivet workflow
+├── requirements.txt                 # Python dependencies (includes flask>=3.0.0)
+├── xp_advisor_improved.rivet-project # Improved Rivet workflow (6 subgraphs)
 └── KNOWLEDGE.md                     # This file (study guide)
 ```
 
@@ -521,6 +613,13 @@ python orchestrator.py
 
 # Launch the Streamlit platform
 streamlit run app.py
+
+# Start the Flask API for real-time calculations (optional — for Rivet httpCall)
+python api_server.py
+# Test: curl http://127.0.0.1:5050/api/health
+
+# Open Rivet workflow
+# Open xp_advisor_improved.rivet-project in Rivet → Run
 ```
 
 ---

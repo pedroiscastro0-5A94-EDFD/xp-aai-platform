@@ -8,11 +8,28 @@ data:
     # ─── MAIN ORCHESTRATOR GRAPH ───────────────────────────────────────────
     main_orchestrator:
       metadata:
-        description: "Main orchestrator graph that runs the 6-agent pipeline. Portfolio Analyst and Macro Analyst run in parallel, then Recommendation Engine, Letter Writer, Compliance Reviewer, and Doc Formatter run sequentially."
+        description: "Main orchestrator graph — 6 agents. Portfolio Analyst and Macro Analyst run in parallel, then sequential pipeline."
         id: main_orchestrator
         name: XP AAI Orchestrator
       nodes:
-        # ─── INPUT NODES ───────────────────────────────────────────────────
+        # ─── INPUT: Pre-calculated portfolio metrics (Python/pandas) ──────
+        '[input_portfolio_json]:text "Portfolio Metrics (Python/Pandas)"':
+          data:
+            text: '{"agent":"Portfolio Analyst","client_name":"Albert da Silva","client_profile":"moderado","total_aum":386859,"summary":{"total_market_value":312182.46,"total_cost_basis":318650.59,"total_pnl":-6468.13,"total_pnl_pct":-2.03,"num_positions":12,"num_asset_classes":2},"returns":{"monthly":-2.35,"ytd":-5.1,"twelve_month":-8.4},"benchmark_comparison":{"monthly":{"portfolio":-2.35,"cdi":1.07,"ibovespa":2.3,"vs_cdi":-3.42,"vs_ibovespa":-4.65,"beats_cdi":false,"beats_ibovespa":false},"ytd":{"portfolio":-5.1,"cdi":2.15,"ibovespa":5.1,"vs_cdi":-7.25,"vs_ibovespa":-10.2},"twelve_month":{"portfolio":-8.4,"cdi":13.2,"ibovespa":18.5,"vs_cdi":-21.6,"vs_ibovespa":-26.9}},"allocation":{"acoes":{"weight":29.16,"market_value":91051.09,"pnl":-44454.33,"pnl_pct":-32.81,"num_positions":7},"renda_fixa":{"weight":70.84,"market_value":221131.37,"pnl":37986.2,"pnl_pct":20.74,"num_positions":5}},"positions":[{"asset":"Lojas Renner","ticker":"LREN3","class":"acoes","market_value":27815.48,"pnl_pct":-41.69,"weight":8.91,"monthly_change_pct":8.94},{"asset":"Marfrig","ticker":"MRFG3","class":"acoes","market_value":15431.04,"pnl_pct":43.5,"weight":4.94,"monthly_change_pct":-16.38},{"asset":"Arezzo","ticker":"ARZZ3","class":"acoes","market_value":10919.94,"pnl_pct":-31.05,"weight":3.5,"monthly_change_pct":0.05},{"asset":"Hapvida","ticker":"HAPV3","class":"acoes","market_value":6141.59,"pnl_pct":-74.58,"weight":1.97,"monthly_change_pct":76.44},{"asset":"Riza Lotus FIC FIRF","ticker":"RIZA-LOTUS","class":"renda_fixa","market_value":96178.73,"pnl_pct":15.51,"weight":30.81},{"asset":"Brave I FIC FIM CP","ticker":"BRAVE-I","class":"renda_fixa","market_value":72567.43,"pnl_pct":19.08,"weight":23.24},{"asset":"Trend Investback FIRF","ticker":"TREND-INV","class":"renda_fixa","market_value":305.44,"pnl_pct":16.01,"weight":0.1},{"asset":"Truxt Long Bias FIC FIM","ticker":"TRUXT-LB","class":"acoes","market_value":12522.05,"pnl_pct":-12.13,"weight":4.01},{"asset":"STK Long Biased FIC FIA","ticker":"STK-LB","class":"acoes","market_value":9745.97,"pnl_pct":-14.51,"weight":3.12},{"asset":"Constellation FIC FIA","ticker":"CONST-FIA","class":"acoes","market_value":8475.02,"pnl_pct":-25.66,"weight":2.71},{"asset":"Ibiuna Hedge FIC FIM","ticker":"IBIUNA-HST","class":"renda_fixa","market_value":11601.02,"pnl_pct":33.74,"weight":3.72},{"asset":"CDB Banco C6","ticker":"CDB-C6","class":"renda_fixa","market_value":40478.75,"pnl_pct":34.93,"weight":12.97}],"alerts":[{"type":"extreme_loss","ticker":"HAPV3","asset":"Hapvida","pnl_pct":-74.58},{"type":"extreme_loss","ticker":"LREN3","asset":"Lojas Renner","pnl_pct":-41.69},{"type":"extreme_loss","ticker":"ARZZ3","asset":"Arezzo","pnl_pct":-31.05},{"type":"extreme_loss","ticker":"CONST-FIA","asset":"Constellation FIC FIA","pnl_pct":-25.66},{"type":"extreme_gain","ticker":"MRFG3","asset":"Marfrig","pnl_pct":43.5},{"type":"extreme_gain","ticker":"CDB-C6","asset":"CDB Banco C6","pnl_pct":34.93},{"type":"extreme_gain","ticker":"IBIUNA-HST","asset":"Ibiuna Hedge","pnl_pct":33.74}],"monthly_price_changes":{"LREN3":{"monthly_change_pct":8.94},"MRFG3":{"monthly_change_pct":-16.38},"ARZZ3":{"monthly_change_pct":0.05},"HAPV3":{"monthly_change_pct":76.44}}}'
+          outgoingConnections:
+            - output->"Subgraph" sg_portfolio_analyst/portfolio_data
+            - output->"Subgraph" sg_letter_writer/portfolio_analysis
+          visualData: 100/200/330/1//
+
+        # ─── INPUT: Pre-calculated drift analysis (Python/pandas) ─────────
+        '[input_drift_json]:text "Drift Analysis (Python/Pandas)"':
+          data:
+            text: '{"client_name":"Albert da Silva","profile":"moderado","profile_label":"Moderado","drift_analysis":[{"asset_class":"renda_fixa","label":"Renda Fixa","target_pct":45,"current_pct":70.84,"drift_pct":25.84,"drift_amount":99964.37,"needs_action":true,"status":"overweight"},{"asset_class":"acoes","label":"Ações","target_pct":25,"current_pct":29.16,"drift_pct":4.16,"drift_amount":16093.33,"needs_action":false,"status":"overweight"},{"asset_class":"fiis","label":"FIIs","target_pct":15,"current_pct":0,"drift_pct":-15,"drift_amount":-58028.85,"needs_action":true,"status":"underweight"},{"asset_class":"internacional","label":"Internacional","target_pct":12,"current_pct":0,"drift_pct":-12,"drift_amount":-46423.08,"needs_action":true,"status":"underweight"},{"asset_class":"cripto","label":"Cripto","target_pct":3,"current_pct":0,"drift_pct":-3,"drift_amount":-11605.77,"needs_action":false,"status":"underweight"}],"positions_to_review":[{"ticker":"HAPV3","pnl_pct":-74.58,"type":"extreme_loss"},{"ticker":"LREN3","pnl_pct":-41.69,"type":"extreme_loss"},{"ticker":"ARZZ3","pnl_pct":-31.05,"type":"extreme_loss"},{"ticker":"MRFG3","pnl_pct":43.5,"type":"extreme_gain"}],"has_actionable_drift":true,"total_aum":386859}'
+          outgoingConnections:
+            - output->"Subgraph" sg_recommendation_engine/drift_data
+          visualData: 100/450/330/2//
+
+        # ─── INPUT: Risk Profile (file) ──────────────────────────────────
         '[input_risk_profile]:readFile "Risk Profile"':
           data:
             path: "input/XP - Albert_s risk profile.txt"
@@ -21,8 +38,9 @@ data:
           outgoingConnections:
             - content->"Subgraph" sg_recommendation_engine/risk_profile
             - content->"Subgraph" sg_letter_writer/risk_profile
-          visualData: 100/400/280/1//
+          visualData: 100/700/280/3//
 
+        # ─── INPUT: Macro Report (file) ──────────────────────────────────
         '[input_macro_report]:readFile "Macro Report"':
           data:
             path: "input/XP - Macro analysis.txt"
@@ -30,77 +48,69 @@ data:
             errorOnMissingFile: false
           outgoingConnections:
             - content->"Subgraph" sg_macro_analyst/macro_report
-          visualData: 100/600/280/2//
+          visualData: 100/950/280/4//
 
-        # ─── AGENT 1: PORTFOLIO ANALYST (runs in parallel with Agent 2) ───
+        # ─── AGENT 1: PORTFOLIO ANALYST ──────────────────────────────────
         '[sg_portfolio_analyst]:subGraph "Portfolio Analyst"':
           data:
             graphId: agent_portfolio_analyst
           outgoingConnections:
-            - output->"Subgraph" sg_letter_writer/portfolio_analysis
-          visualData: 500/300/300/3//
+            - output->"Subgraph" sg_letter_writer/portfolio_narrative
+          visualData: 550/200/300/5//
 
-        # ─── AGENT 2: MACRO ANALYST (runs in parallel with Agent 1) ──────
+        # ─── AGENT 2: MACRO ANALYST ─────────────────────────────────────
         '[sg_macro_analyst]:subGraph "Macro Analyst"':
           data:
             graphId: agent_macro_analyst
           outgoingConnections:
             - output->"Subgraph" sg_recommendation_engine/macro_analysis
             - output->"Subgraph" sg_letter_writer/macro_analysis
-          visualData: 500/600/300/4//
+          visualData: 550/950/300/6//
 
-        # ─── AGENT 3: RECOMMENDATION ENGINE ──────────────────────────────
+        # ─── AGENT 3: RECOMMENDATION ENGINE ─────────────────────────────
         '[sg_recommendation_engine]:subGraph "Recommendation Engine"':
           data:
             graphId: agent_recommendation_engine
           outgoingConnections:
             - output->"Subgraph" sg_letter_writer/recommendations
-          visualData: 900/450/300/5//
+          visualData: 950/500/300/7//
 
-        # ─── AGENT 4: LETTER WRITER ──────────────────────────────────────
+        # ─── AGENT 4: LETTER WRITER ─────────────────────────────────────
         '[sg_letter_writer]:subGraph "Letter Writer"':
           data:
             graphId: agent_letter_writer
           outgoingConnections:
             - output->"Subgraph" sg_compliance_reviewer/letter_text
-          visualData: 1300/450/300/6//
+          visualData: 1400/500/300/8//
 
-        # ─── AGENT 5: COMPLIANCE REVIEWER ─────────────────────────────────
+        # ─── AGENT 5: COMPLIANCE REVIEWER ────────────────────────────────
         '[sg_compliance_reviewer]:subGraph "Compliance Reviewer"':
           data:
             graphId: agent_compliance_reviewer
           outgoingConnections:
             - output->"Subgraph" sg_doc_formatter/reviewed_letter
-          visualData: 1700/450/300/7//
+          visualData: 1800/500/300/9//
 
-        # ─── AGENT 6: DOC FORMATTER ──────────────────────────────────────
+        # ─── AGENT 6: DOC FORMATTER ─────────────────────────────────────
         '[sg_doc_formatter]:subGraph "Doc Formatter"':
           data:
             graphId: agent_doc_formatter
-          visualData: 2100/450/300/8//
+          visualData: 2200/500/300/10//
 
     # ─── SUBGRAPH: PORTFOLIO ANALYST ──────────────────────────────────────
     agent_portfolio_analyst:
       metadata:
-        description: "Calls the Python API to calculate portfolio metrics with pandas, then uses GPT-4o to generate a narrative summary."
+        description: "Receives pre-calculated portfolio metrics (from Python/pandas) and generates a narrative summary with GPT-4o."
         id: agent_portfolio_analyst
         name: "Agent 1: Portfolio Analyst"
       nodes:
-        # HTTP Call to the Flask API — runs pandas calculations
-        '[pa_http_calc]:httpCall "Calculate Portfolio (Python/Pandas)"':
+        '[pa_input]:graphInput "Portfolio Data"':
           data:
-            method: POST
-            useMethodInput: false
-            url: "http://127.0.0.1:5050/api/portfolio-analysis"
-            useUrlInput: false
-            headers: "Content-Type: application/json"
-            useHeadersInput: false
-            body: '{"client_id": "cli_007"}'
-            useBodyInput: false
-            errorOnNon200: true
+            dataType: string
+            id: portfolio_data
           outgoingConnections:
-            - res_body->"Prompt" pa_prompt/calculated_metrics
-          visualData: 100/300/330/1//
+            - data->"Prompt" pa_prompt/calculated_metrics
+          visualData: 100/300/250/1//
 
         '[pa_prompt]:prompt "Summarize Portfolio"':
           data:
@@ -109,24 +119,23 @@ data:
               ## Portfolio Analysis Summary
 
               You are a financial analyst at XP Investimentos.
-              Summarize the following CALCULATED portfolio metrics.
+              The JSON below contains EXACT metrics calculated by Python/pandas code.
+              Use ONLY these numbers. Never invent or estimate figures.
 
-              IMPORTANT: All numbers below were computed by Python/pandas code
-              and are EXACT. Use ONLY these numbers. Never invent or estimate figures.
-
-              ### Calculated Portfolio Metrics (JSON from Python API):
+              ### Calculated Portfolio Metrics (JSON — computed by Python/pandas):
               {{calculated_metrics}}
 
               ### Instructions:
               - Highlight overall return vs CDI and IBOV benchmarks
               - Flag any positions with extreme losses (>25%) or gains (>30%)
-              - Note the asset allocation breakdown
-              - Keep it factual and data-driven, max 200 words
+              - Note the asset allocation breakdown (renda_fixa vs acoes)
+              - Include LAST MONTH stock returns (monthly_change_pct field) calculated from the profitability CSV
+              - Keep it factual and data-driven, max 250 words
             type: user
             useTypeInput: false
           outgoingConnections:
             - output->"Chat" pa_chat/prompt
-          visualData: 500/300/350/2//
+          visualData: 450/300/350/2//
 
         '[pa_chat]:chat "GPT-4o"':
           data:
@@ -150,7 +159,7 @@ data:
     # ─── SUBGRAPH: MACRO ANALYST ──────────────────────────────────────────
     agent_macro_analyst:
       metadata:
-        description: "Reads XP's macro report, extracts key projections (Selic, IPCA, GDP, FX), summarizes implications."
+        description: "Reads XP's macro report, extracts key projections (Selic, IPCA, GDP, FX)."
         id: agent_macro_analyst
         name: "Agent 2: Macro Analyst"
       nodes:
@@ -171,9 +180,9 @@ data:
               You are a senior macroeconomic analyst at XP Investimentos.
               Analyze the monthly macro research report below and extract:
 
-              1. KEY PROJECTIONS: Selic path, IPCA forecast, GDP growth, BRL/USD, fiscal outlook
+              1. KEY PROJECTIONS: Selic path, IPCA forecast, GDP growth, BRL/USD
               2. MARKET SENTIMENT: Assessment for each asset class
-              3. PORTFOLIO IMPLICATIONS: What this means for fixed income, equities, FIIs, international
+              3. PORTFOLIO IMPLICATIONS: What this means for fixed income, equities, FIIs
               4. RISK FACTORS: Top 3-5 risks to monitor
 
               Keep it factual, data-driven, max 400 words.
@@ -208,25 +217,17 @@ data:
     # ─── SUBGRAPH: RECOMMENDATION ENGINE ─────────────────────────────────
     agent_recommendation_engine:
       metadata:
-        description: "Calls the Python API for deterministic drift calculations, then uses GPT-4o to generate CVM-compliant suggestions."
+        description: "Receives pre-calculated drift data (from Python/pandas) and generates CVM-compliant suggestions with GPT-4o."
         id: agent_recommendation_engine
         name: "Agent 3: Recommendation Engine"
       nodes:
-        # HTTP Call to the Flask API — runs drift calculations
-        '[re_http_drift]:httpCall "Calculate Drift (Python/Pandas)"':
+        '[re_input_drift]:graphInput "Drift Data"':
           data:
-            method: POST
-            useMethodInput: false
-            url: "http://127.0.0.1:5050/api/drift-analysis"
-            useUrlInput: false
-            headers: "Content-Type: application/json"
-            useHeadersInput: false
-            body: '{"client_id": "cli_007"}'
-            useBodyInput: false
-            errorOnNon200: true
+            dataType: string
+            id: drift_data
           outgoingConnections:
-            - res_body->"Prompt" re_prompt/drift_analysis
-          visualData: 100/200/330/1//
+            - data->"Prompt" re_prompt/drift_analysis
+          visualData: 100/200/250/1//
 
         '[re_input_ma]:graphInput "Macro Analysis"':
           data:
@@ -234,7 +235,7 @@ data:
             id: macro_analysis
           outgoingConnections:
             - data->"Prompt" re_prompt/macro_context
-          visualData: 100/500/250/2//
+          visualData: 100/450/250/2//
 
         '[re_input_rp]:graphInput "Risk Profile"':
           data:
@@ -254,11 +255,11 @@ data:
 
               CRITICAL RULES:
               - NEVER use "compre", "venda", "recomendo a compra/venda"
-              - Use: "pode ser oportuno avaliar", "a alocação sugere ajuste"
+              - Use: "pode ser oportuno avaliar", "a alocacao sugere ajuste"
               - NEVER guarantee returns
               - Always frame as analysis, not direct recommendations
 
-              ### Drift Analysis (calculated by Python code — these numbers are EXACT):
+              ### Drift Analysis (calculated by Python/pandas — numbers are EXACT):
               {{drift_analysis}}
 
               ### Client Risk Profile:
@@ -268,7 +269,7 @@ data:
               {{macro_context}}
 
               Generate 3-5 specific rebalancing suggestions in Portuguese.
-              Reference the exact drift percentages and amounts from the analysis.
+              Reference the exact drift percentages and amounts.
               Max 300 words.
             type: user
             useTypeInput: false
@@ -298,7 +299,7 @@ data:
     # ─── SUBGRAPH: LETTER WRITER ─────────────────────────────────────────
     agent_letter_writer:
       metadata:
-        description: "Generates professional 2-page monthly letter in Portuguese from all agent outputs."
+        description: "Generates professional monthly letter in Portuguese from all agent outputs."
         id: agent_letter_writer
         name: "Agent 4: Letter Writer"
       nodes:
@@ -308,7 +309,15 @@ data:
             id: portfolio_analysis
           outgoingConnections:
             - data->"Prompt" lw_prompt/portfolio_analysis
-          visualData: 100/200/250/1//
+          visualData: 100/100/250/1//
+
+        '[lw_input_narrative]:graphInput "Portfolio Narrative"':
+          data:
+            dataType: string
+            id: portfolio_narrative
+          outgoingConnections:
+            - data->"Prompt" lw_prompt/portfolio_narrative
+          visualData: 100/300/250/2//
 
         '[lw_input_ma]:graphInput "Macro Analysis"':
           data:
@@ -316,7 +325,7 @@ data:
             id: macro_analysis
           outgoingConnections:
             - data->"Prompt" lw_prompt/macro_analysis
-          visualData: 100/400/250/2//
+          visualData: 100/500/250/3//
 
         '[lw_input_rec]:graphInput "Recommendations"':
           data:
@@ -324,7 +333,7 @@ data:
             id: recommendations
           outgoingConnections:
             - data->"Prompt" lw_prompt/recommendations
-          visualData: 100/600/250/3//
+          visualData: 100/700/250/4//
 
         '[lw_input_rp]:graphInput "Risk Profile"':
           data:
@@ -332,7 +341,7 @@ data:
             id: risk_profile
           outgoingConnections:
             - data->"Prompt" lw_prompt/risk_profile
-          visualData: 100/800/250/4//
+          visualData: 100/900/250/5//
 
         '[lw_prompt]:prompt "Write Letter"':
           data:
@@ -341,36 +350,38 @@ data:
               ## Monthly Investment Letter (Portuguese)
 
               Write a professional monthly investment letter in Brazilian Portuguese.
-              Max 2 pages (~600 words). Letter format with paragraphs, not bullet points.
+              Max 2 pages (~600 words). Letter format with paragraphs.
 
               STRUCTURE:
               1. Header: "Carta Mensal de Investimentos — Fevereiro/2026"
-              2. Greeting: "Prezado(a) [Name],"
+              2. Greeting: "Prezado Albert,"
               3. Market context (1-2 paragraphs)
-              4. Portfolio performance with EXACT numbers from data
-              5. Positioning and outlook
-              6. CVM-compliant recommendations
-              7. Professional closing
-              8. Disclaimer
-
-              STYLE: Formal, warm, confident. CVM-compliant throughout.
+              4. Portfolio performance with EXACT numbers from the JSON data
+              5. Individual stock monthly returns (monthly_change_pct from CSV data) — mention at least the most notable movers
+              6. Positioning and outlook
+              7. CVM-compliant recommendations (which assets to consider adding/reducing)
+              8. Professional closing with "Atenciosamente, Carlos Eduardo Martins, CNPI-T 12345"
+              9. Disclaimer: "Este material e meramente informativo e nao constitui recomendacao de investimento."
 
               ### Client Risk Profile:
               {{risk_profile}}
 
-              ### Portfolio Analysis:
+              ### Portfolio Data (JSON — exact numbers from Python/pandas):
               {{portfolio_analysis}}
 
-              ### Macro Analysis:
+              ### Portfolio Narrative (from Agent 1):
+              {{portfolio_narrative}}
+
+              ### Macro Analysis (from Agent 2):
               {{macro_analysis}}
 
-              ### Recommendations:
+              ### Recommendations (from Agent 3):
               {{recommendations}}
             type: user
             useTypeInput: false
           outgoingConnections:
             - output->"Chat" lw_chat/prompt
-          visualData: 500/450/350/5//
+          visualData: 500/450/400/6//
 
         '[lw_chat]:chat "GPT-4o"':
           data:
@@ -383,18 +394,18 @@ data:
             useAsGraphPartialOutput: false
           outgoingConnections:
             - response->"GraphOutput" lw_output/value
-          visualData: 950/450/250/6//
+          visualData: 1000/450/250/7//
 
         '[lw_output]:graphOutput "Letter Text"':
           data:
             dataType: string
             id: output
-          visualData: 1250/450/200/7//
+          visualData: 1300/450/200/8//
 
     # ─── SUBGRAPH: COMPLIANCE REVIEWER ────────────────────────────────────
     agent_compliance_reviewer:
       metadata:
-        description: "Reviews letter for CVM compliance. Quality gate that checks for prohibited language and missing elements."
+        description: "Reviews letter for CVM compliance — quality gate."
         id: agent_compliance_reviewer
         name: "Agent 5: Compliance Reviewer"
       nodes:
@@ -404,7 +415,6 @@ data:
             id: letter_text
           outgoingConnections:
             - data->"Prompt" cr_prompt/letter_text
-            - data->"GraphOutput" cr_output/value
           visualData: 100/300/250/1//
 
         '[cr_prompt]:prompt "Review Compliance"':
@@ -420,8 +430,7 @@ data:
               2. Guaranteed returns ("vai render", "garantido", "sem risco")
               3. Missing disclaimer about risks
               4. Misleading comparisons
-              5. Missing risk warnings
-              6. Aggressive/pressuring tone
+              5. Aggressive/pressuring tone
 
               OUTPUT: PASS/FAIL, list of violations, suggested fixes, score 0-100.
 
@@ -442,6 +451,8 @@ data:
             temperature: 0.1
             top_p: 1
             useAsGraphPartialOutput: false
+          outgoingConnections:
+            - response->"GraphOutput" cr_output/value
           visualData: 900/300/250/3//
 
         '[cr_output]:graphOutput "Reviewed Letter"':
@@ -453,7 +464,7 @@ data:
     # ─── SUBGRAPH: DOC FORMATTER ─────────────────────────────────────────
     agent_doc_formatter:
       metadata:
-        description: "Formats the final letter output. In production, uses python-docx for professional .docx with XP branding."
+        description: "In production, uses python-docx. For demo, passes letter through."
         id: agent_doc_formatter
         name: "Agent 6: Doc Formatter"
       nodes:
@@ -472,7 +483,7 @@ data:
           visualData: 450/300/200/2//
 
   metadata:
-    description: "XP AAI Platform — Improved Rivet workflow with 6 specialized agents. Portfolio calculations use a Python/Flask API (pandas) for deterministic results, while GPT-4o generates narrative text."
+    description: "XP AAI Platform — 6-agent pipeline. Portfolio metrics pre-calculated by Python/pandas (deterministic). GPT-4o generates narrative text only. In production, calculations run via Flask API in real-time."
     id: xp_advisor_improved
     title: XP AAI Platform — Improved Workflow
   plugins: []

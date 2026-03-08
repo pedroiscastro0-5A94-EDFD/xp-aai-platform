@@ -84,6 +84,14 @@ class LetterWriter:
             elif a["type"] == "extreme_gain":
                 alerts_text += f"- {a['ticker']}: alta de {a['pnl_pct']:.1f}% vs. preço médio\n"
 
+        # Format monthly stock returns from CSV profitability data
+        monthly_changes_text = ""
+        positions = portfolio_analysis.get("positions", [])
+        for pos in positions:
+            mc = pos.get("monthly_change_pct")
+            if mc is not None:
+                monthly_changes_text += f"- {pos['ticker']} ({pos['asset']}): {mc:+.2f}% last month\n"
+
         user_prompt = (
             f"Write the monthly letter for:\n"
             f"CLIENT: {client['name']}\n"
@@ -99,6 +107,8 @@ class LetterWriter:
             f"- Current allocation: {alloc_text}\n"
             f"- Number of positions: {portfolio_analysis.get('summary', {}).get('num_positions', 0)}\n\n"
             f"ALERTS:\n{alerts_text or 'None'}\n\n"
+            f"MONTHLY STOCK RETURNS (calculated from profitability CSV):\n"
+            f"{monthly_changes_text or 'No CSV data available'}\n\n"
             f"MACRO CONTEXT:\n"
             f"- Selic: {key_proj.get('selic', {}).get('current', 14.25)}% ({key_proj.get('selic', {}).get('note', '')})\n"
             f"- IPCA: {key_proj.get('ipca', {}).get('twelve_month', 5.2)}% 12M ({key_proj.get('ipca', {}).get('note', '')})\n"
@@ -153,6 +163,19 @@ class LetterWriter:
         cdi_monthly = benchmark.get("monthly", {}).get("cdi", 1.07)
         vs_cdi = benchmark.get("monthly", {}).get("vs_cdi", 0)
 
+        # Build monthly stock returns section from CSV data
+        positions = portfolio_analysis.get("positions", [])
+        stock_returns_text = ""
+        for pos in positions:
+            mc = pos.get("monthly_change_pct")
+            if mc is not None:
+                direction = "valorização" if mc > 0 else "desvalorização"
+                stock_returns_text += f"- {pos['ticker']} ({pos['asset']}): {direction} de {abs(mc):.1f}% no mês\n"
+
+        # Build concise recommendations (max 3 most important)
+        rec_lines = rec_text.strip().split("\n") if rec_text else []
+        rec_concise = "\n".join(rec_lines[:5]) if rec_lines else "Carteira alinhada ao perfil."
+
         letter = f"""Carta Mensal de Investimentos — Fevereiro/2026
 
 Prezado(a) {client['name']},
@@ -163,19 +186,18 @@ Cenário Macroeconômico
 
 O mês de fevereiro foi marcado por um cenário de cautela nos mercados. O Comitê de Política Monetária (Copom) elevou a taxa Selic para {key_proj.get('selic', {}).get('current', 14.25)}% ao ano, reforçando o compromisso com o controle da inflação, que acumula {key_proj.get('ipca', {}).get('twelve_month', 5.2)}% em 12 meses. A economia brasileira mostra sinais de desaceleração, com projeção de crescimento de {key_proj.get('gdp', {}).get('forecast_2025', 2.0)}% para 2025, ante {key_proj.get('gdp', {}).get('previous_year', 3.6)}% registrado em 2024. O câmbio operou com volatilidade, com o dólar cotado a R${key_proj.get('fx', {}).get('current', 5.85)}.
 
-No cenário internacional, a política tarifária dos EUA continuou gerando incerteza, enquanto o Federal Reserve manteve os juros estáveis diante de uma inflação persistente.
-
 Desempenho da Carteira
 
 Sua carteira apresentou rentabilidade de {monthly_ret:.2f}% no mês, {"superando" if vs_cdi > 0 else "ficando abaixo do"} o CDI de {cdi_monthly:.2f}% em {abs(vs_cdi):.2f} pontos percentuais. No acumulado do ano, o retorno é de {returns.get('ytd', 0):.2f}%, e nos últimos 12 meses, de {returns.get('twelve_month', 0):.2f}%.
 
-O portfólio mantém uma alocação diversificada e alinhada ao seu perfil {profile_label}, com exposição equilibrada entre as diferentes classes de ativos. A parcela de renda fixa continua se beneficiando do ambiente de juros elevados, enquanto a exposição a renda variável foi impactada pela volatilidade do período.
+Rentabilidade Mensal das Ações (calculada automaticamente a partir do CSV):
 
-Posicionamento e Perspectivas
+{stock_returns_text}
+Posicionamento e Recomendações
 
-{rec_text}
+{rec_concise}
 
-Diante do cenário atual, entendemos que a carteira está adequadamente posicionada para navegar o ambiente de juros elevados e desaceleração econômica. Seguimos atentos às oportunidades que possam surgir com a evolução do cenário.
+Diante do cenário atual, seguimos atentos às oportunidades que possam surgir com a evolução do cenário.
 
 Permaneço à disposição para agendarmos uma conversa e discutirmos em mais detalhes o posicionamento de sua carteira.
 
