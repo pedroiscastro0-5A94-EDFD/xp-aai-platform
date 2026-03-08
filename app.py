@@ -294,9 +294,8 @@ if page == "📊  Overview":
 
     with col_left:
         st.markdown("#### Market Benchmarks")
-        st.markdown("<span style='color:#6B7B8F;font-size:12px'>Cumulative return — select indexes and timeframe</span>", unsafe_allow_html=True)
 
-        # Selectors
+        # Row 1: Index picker + timeframe
         sel_col1, sel_col2 = st.columns([3, 2])
         with sel_col1:
             selected_benchmarks = st.multiselect(
@@ -314,6 +313,16 @@ if page == "📊  Overview":
                 index=2,
                 label_visibility="collapsed",
             )
+
+        # Row 2: Optional client portfolio overlay
+        client_options_ids = [None] + [c["id"] for c in st.session_state.all_clients]
+        client_name_map = {c["id"]: c["name"] for c in st.session_state.all_clients}
+        compare_client_id = st.selectbox(
+            "Compare with client",
+            options=client_options_ids,
+            format_func=lambda x: "Compare with a client portfolio →" if x is None else f"📊 {client_name_map[x]}",
+            label_visibility="collapsed",
+        )
 
         timeframe_start = {"3M": 9, "6M": 6, "12M": 0}
         start_idx = timeframe_start.get(timeframe, 0)
@@ -337,6 +346,24 @@ if page == "📊  Overview":
                 line=dict(color=bench_colors.get(bench, "#999"), width=2),
                 marker=dict(size=4),
             ))
+
+        # Client portfolio overlay
+        if compare_client_id:
+            compare_portfolio = st.session_state.all_holdings.get(compare_client_id)
+            if compare_portfolio:
+                period_return_map = {"12M": "twelveMonthReturn", "YTD": "ytdReturn", "3M": "ytdReturn"}
+                client_return = compare_portfolio.get(period_return_map.get(timeframe, "twelveMonthReturn"), 0)
+                compare_name = client_name_map[compare_client_id]
+                fig.add_hline(
+                    y=client_return,
+                    line_dash="dash",
+                    line_color="#F59E0B",
+                    line_width=1.5,
+                    annotation_text=f" {compare_name}: {client_return:+.2f}%",
+                    annotation_position="bottom right",
+                    annotation_font_color="#F59E0B",
+                    annotation_font_size=11,
+                )
 
         fig.add_hline(y=0, line_dash="dot", line_color="rgba(255,255,255,0.12)", line_width=1)
         fig.update_layout(
@@ -424,26 +451,41 @@ elif page == "👤  Client Portfolio":
             - **Notes:** {client.get('notes', 'N/A')}
             """)
 
-            # Benchmark comparison bar
+            # Benchmark comparison — horizontal bar (this month)
             st.markdown("#### Performance vs. Benchmarks")
-            bench_data = pd.DataFrame([
-                {"Indicator": "Portfolio", "Return": portfolio["monthlyReturn"]},
-                {"Indicator": "CDI", "Return": MARKET_BENCHMARKS["cdi"]["monthly"]},
-                {"Indicator": "IBOV", "Return": MARKET_BENCHMARKS["ibovespa"]["monthly"]},
-                {"Indicator": "IFIX", "Return": MARKET_BENCHMARKS["ifix"]["monthly"]},
-            ])
-            fig2 = px.bar(
-                bench_data, x="Indicator", y="Return",
-                color="Indicator",
-                color_discrete_map={"Portfolio": "#EDB92E", "CDI": "#3B82F6", "IBOV": "#10B981", "IFIX": "#8B5CF6"},
-            )
+            st.markdown("<span style='color:#6B7B8F;font-size:11px'>Monthly return comparison</span>", unsafe_allow_html=True)
+
+            port_ret = portfolio["monthlyReturn"]
+            comp_data = [
+                {"label": "Portfolio", "value": port_ret, "color": "#EDB92E"},
+                {"label": "CDI",       "value": MARKET_BENCHMARKS["cdi"]["monthly"],       "color": "#3B82F6"},
+                {"label": "IBOV",      "value": MARKET_BENCHMARKS["ibovespa"]["monthly"],  "color": "#10B981"},
+                {"label": "IFIX",      "value": MARKET_BENCHMARKS["ifix"]["monthly"],      "color": "#8B5CF6"},
+            ]
+            fig2 = go.Figure()
+            for item in comp_data:
+                fig2.add_trace(go.Bar(
+                    name=item["label"],
+                    x=[item["value"]],
+                    y=[item["label"]],
+                    orientation="h",
+                    marker_color=item["color"],
+                    text=f"{item['value']:+.2f}%",
+                    textposition="outside",
+                    textfont=dict(color=item["color"], size=12),
+                    width=0.5,
+                ))
+            fig2.add_vline(x=0, line_color="rgba(255,255,255,0.15)", line_width=1)
             fig2.update_layout(
+                barmode="overlay",
                 plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                font_color="#8896AB", height=250, margin=dict(l=20, r=20, t=20, b=20),
+                font_color="#8896AB", height=220,
+                margin=dict(l=10, r=60, t=10, b=20),
                 showlegend=False,
+                xaxis_title="Return (%)",
+                xaxis=dict(gridcolor="rgba(255,255,255,0.06)"),
+                yaxis=dict(gridcolor="rgba(0,0,0,0)"),
             )
-            fig2.update_xaxes(gridcolor="rgba(255,255,255,0.06)")
-            fig2.update_yaxes(gridcolor="rgba(255,255,255,0.06)", title="Return (%)")
             st.plotly_chart(fig2, use_container_width=True)
 
         # Holdings table
@@ -631,60 +673,84 @@ elif page == "⚖️  Rebalancing":
 
         drift_df = get_drift_data(client["profile"], portfolio["holdings"], client["totalAUM"])
 
-        # Current vs Target allocation chart
+        # ── Drift chart (full width) ──────────────────────────────────────
+        st.markdown("#### Allocation Drift vs. Target")
+        st.markdown(
+            "<span style='color:#6B7B8F;font-size:12px'>How far each asset class is from its target weight. "
+            "Red = overweight (too much), blue = underweight (too little). "
+            "Action required outside the ±5pp dashed lines.</span>",
+            unsafe_allow_html=True,
+        )
+
+        drift_colors = [
+            "#EF4444" if d > 5 else "#3B82F6" if d < -5 else "#6B7B8F"
+            for d in drift_df["drift"]
+        ]
+        drift_fig = go.Figure()
+        drift_fig.add_trace(go.Bar(
+            x=drift_df["label"],
+            y=drift_df["drift"],
+            marker_color=drift_colors,
+            text=[f"{d:+.1f}pp" for d in drift_df["drift"]],
+            textposition="outside",
+            textfont=dict(size=12),
+            hovertemplate="<b>%{x}</b><br>Drift: %{y:+.1f}pp<br><extra></extra>",
+            width=0.5,
+        ))
+
+        # Threshold lines at ±5pp
+        drift_fig.add_hline(y=5,  line_dash="dot", line_color="rgba(239,68,68,0.45)", line_width=1.5)
+        drift_fig.add_hline(y=-5, line_dash="dot", line_color="rgba(59,130,246,0.45)", line_width=1.5)
+        drift_fig.add_hline(y=0,  line_color="rgba(255,255,255,0.15)", line_width=1)
+
+        y_range = max(abs(drift_df["drift"].max()), abs(drift_df["drift"].min()), 8) + 4
+        drift_fig.update_layout(
+            plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+            font_color="#8896AB", height=320,
+            margin=dict(l=20, r=20, t=30, b=20),
+            showlegend=False,
+            yaxis_title="Drift (pp vs. target)",
+            yaxis=dict(range=[-y_range, y_range], zeroline=False, gridcolor="rgba(255,255,255,0.06)"),
+            xaxis=dict(gridcolor="rgba(0,0,0,0)"),
+        )
+        st.plotly_chart(drift_fig, use_container_width=True)
+
+        # ── Summary table + actions ───────────────────────────────────────
         col_left, col_right = st.columns(2)
 
         with col_left:
-            st.markdown("#### Current vs. Target Allocation")
-            fig = go.Figure()
-            fig.add_trace(go.Bar(
-                name="Current", x=drift_df["label"], y=drift_df["current"],
-                marker_color=[CLASS_COLORS.get(c, "#999") for c in drift_df["class"]],
-                opacity=0.8,
-            ))
-            fig.add_trace(go.Bar(
-                name="Target", x=drift_df["label"], y=drift_df["target"],
-                marker_color=[CLASS_COLORS.get(c, "#999") for c in drift_df["class"]],
-                opacity=0.3,
-            ))
-            fig.update_layout(
-                barmode="group", plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                font_color="#8896AB", height=350, margin=dict(l=20, r=20, t=20, b=40),
-                legend=dict(orientation="h", yanchor="bottom", y=-0.15),
-                yaxis_title="Allocation (%)",
-            )
-            fig.update_xaxes(gridcolor="rgba(255,255,255,0.06)")
-            fig.update_yaxes(gridcolor="rgba(255,255,255,0.06)")
-            st.plotly_chart(fig, use_container_width=True)
-
-        with col_right:
-            st.markdown("#### Drift Analysis")
+            st.markdown("#### Current vs. Target")
             for _, row in drift_df.iterrows():
                 drift = row["drift"]
-                color = "#EF4444" if drift > 5 else "#10B981" if drift < -5 else "#6B7B8F"
-                action = "OVERWEIGHT" if drift > 5 else "UNDERWEIGHT" if drift < -5 else "ON TARGET"
-                action_color = color
-
+                bar_color = "#EF4444" if drift > 5 else "#3B82F6" if drift < -5 else "#10B981"
+                status_icon = "🔴" if drift > 5 else "🔵" if drift < -5 else "✅"
                 st.markdown(f"""
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-radius:8px;background:rgba(255,255,255,0.02);margin-bottom:6px;border-left:3px solid {row['color']}">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-radius:8px;background:rgba(255,255,255,0.02);margin-bottom:5px;border-left:3px solid {bar_color}">
                     <div>
-                        <div style="font-weight:600;font-size:13px">{row['label']}</div>
-                        <div style="font-size:11px;color:#6B7B8F">Target: {row['target']}% · Current: {row['current']}%</div>
+                        <span style="font-size:13px">{status_icon} <strong>{row['label']}</strong></span><br>
+                        <span style="font-size:11px;color:#6B7B8F">Target {row['target']}% → Current {row['current']}%</span>
                     </div>
-                    <div style="text-align:right">
-                        <div style="font-family:monospace;color:{color};font-weight:600">{drift:+.1f}pp</div>
-                        <div style="font-size:10px;color:{action_color};font-weight:600">{action}</div>
-                    </div>
+                    <span style="font-family:monospace;color:{bar_color};font-weight:700">{drift:+.1f}pp</span>
                 </div>
                 """, unsafe_allow_html=True)
 
+        with col_right:
             if any(drift_df["needs_action"]):
-                st.markdown("")
-                st.markdown("#### Rebalancing Required")
+                st.markdown("#### Action Required")
                 for _, row in drift_df[drift_df["needs_action"]].iterrows():
-                    direction = "reduce" if row["drift"] > 0 else "increase"
+                    direction = "Reduce" if row["drift"] > 0 else "Increase"
                     amount = abs(row["drift_amount"])
-                    st.markdown(f"- **{row['label']}**: {direction} by ~{format_brl(amount)} ({abs(row['drift']):+.1f}pp drift)")
+                    icon = "🔻" if row["drift"] > 0 else "🔺"
+                    st.markdown(f"""
+                    <div style="padding:10px 14px;border-radius:8px;background:rgba(255,255,255,0.02);margin-bottom:6px;border:1px solid rgba(255,255,255,0.08)">
+                        <div style="font-weight:600">{icon} {row['label']}</div>
+                        <div style="font-size:12px;color:#8896AB;margin-top:2px">{direction} by ~{format_brl(amount)}</div>
+                        <div style="font-size:11px;color:#6B7B8F">Drift: {row['drift']:+.1f}pp</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.markdown("#### Action Required")
+                st.markdown("<span style='color:#10B981'>✅ Portfolio is within target ranges. No rebalancing needed.</span>", unsafe_allow_html=True)
 
         # Position-level alerts
         st.markdown("---")
