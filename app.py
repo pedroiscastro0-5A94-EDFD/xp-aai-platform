@@ -17,6 +17,7 @@ from data.clients import MOCK_CLIENTS, MOCK_HOLDINGS, MOCK_TRANSACTIONS, COMMUNI
 from data.market import (
     MARKET_BENCHMARKS, TARGET_ALLOCATIONS, AAI_PROFILE,
     CLASS_LABELS, CLASS_COLORS, PROFILE_LABELS, STATUS_MAP,
+    BENCHMARK_HISTORY, BENCHMARK_LABELS,
 )
 from orchestrator import run_pipeline, generate_workflow_report
 
@@ -192,23 +193,46 @@ CRM_DATABASE = [
 # ─── SIDEBAR ──────────────────────────────────────────────────────────────────
 
 with st.sidebar:
+    # ── Header ─────────────────────────────────────────────
     st.markdown("### 📊 XP AAI Platform")
-    st.markdown(f"<span style='color:#6B7B8F;font-size:12px'>{AAI_PROFILE['name']} — {AAI_PROFILE['cnpi']}</span>", unsafe_allow_html=True)
-    st.markdown("---")
+    st.markdown(
+        f"<span style='color:#6B7B8F;font-size:12px'>{AAI_PROFILE['name']} — {AAI_PROFILE['cnpi']}</span>",
+        unsafe_allow_html=True,
+    )
+    st.markdown("<hr style='border-color:rgba(255,255,255,0.06);margin:10px 0 14px 0'>", unsafe_allow_html=True)
 
-    # Navigation
+    # ── Navigation ─────────────────────────────────────────
+    st.markdown(
+        "<span style='color:#4B5B6F;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:600'>NAVIGATE</span>",
+        unsafe_allow_html=True,
+    )
+    st.markdown("")
     page = st.radio(
-        "Navigation",
-        ["Client Dashboard", "Client Deep Dive", "Report Generator", "Recommendations", "➕ Add Client"],
+        "Navigate",
+        [
+            "📊  Overview",
+            "👤  Client Portfolio",
+            "📄  Reports",
+            "⚖️  Rebalancing",
+            "➕  Add Client",
+        ],
         label_visibility="collapsed",
     )
 
-    st.markdown("---")
-    st.markdown("<span style='color:#6B7B8F;font-size:11px;text-transform:uppercase;letter-spacing:1px'>Clients</span>", unsafe_allow_html=True)
+    st.markdown("<hr style='border-color:rgba(255,255,255,0.06);margin:14px 0'>", unsafe_allow_html=True)
+
+    # ── Clients ────────────────────────────────────────────
+    n_clients = len(st.session_state.all_clients)
+    st.markdown(
+        f"<span style='color:#4B5B6F;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:600'>CLIENTS ({n_clients})</span>",
+        unsafe_allow_html=True,
+    )
+    st.markdown("")
 
     for cl in st.session_state.all_clients:
         status_info = STATUS_MAP.get(cl["status"], {})
         status_color = status_info.get("color", "#999")
+        status_label = status_info.get("label", cl["status"])
         is_selected = st.session_state.selected_client == cl["id"]
 
         col1, col2 = st.columns([4, 1])
@@ -221,10 +245,22 @@ with st.sidebar:
                 st.session_state.selected_client = cl["id"]
                 st.rerun()
         with col2:
-            st.markdown(f"<div style='width:8px;height:8px;border-radius:50%;background:{status_color};margin-top:12px'></div>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div style='width:8px;height:8px;border-radius:50%;background:{status_color};margin-top:12px' title='{status_label}'></div>",
+                unsafe_allow_html=True,
+            )
 
-    st.markdown("---")
-    st.markdown(f"<span style='color:#6B7B8F;font-size:10px'>AUM Total: {format_brl(sum(c['totalAUM'] for c in st.session_state.all_clients))}</span>", unsafe_allow_html=True)
+    # ── Footer ─────────────────────────────────────────────
+    st.markdown("<hr style='border-color:rgba(255,255,255,0.06);margin:10px 0 8px 0'>", unsafe_allow_html=True)
+    total_aum_all = sum(c["totalAUM"] for c in st.session_state.all_clients)
+    st.markdown(f"""
+    <div style='font-size:10px;color:#4B5B6F;line-height:2'>
+        <span style='margin-right:10px'>🟢 Up to date</span>
+        <span style='margin-right:10px'>🟡 Follow-up</span>
+        <span>🔴 Overdue</span><br>
+        <span style='color:#6B7B8F'>Total AUM: {format_brl(total_aum_all)}</span>
+    </div>
+    """, unsafe_allow_html=True)
 
 # ─── GET SELECTED CLIENT DATA ────────────────────────────────────────────────
 
@@ -233,11 +269,11 @@ client = next((c for c in st.session_state.all_clients if c["id"] == selected), 
 portfolio = st.session_state.all_holdings.get(selected) if selected else None
 transactions = st.session_state.all_transactions.get(selected, []) if selected else []
 
-# ─── PAGE: CLIENT DASHBOARD ──────────────────────────────────────────────────
+# ─── PAGE: OVERVIEW (CLIENT DASHBOARD) ───────────────────────────────────────
 
-if page == "Client Dashboard":
-    st.markdown("## Client Dashboard")
-    st.markdown(f"<span style='color:#6B7B8F'>Overview — {datetime.now().strftime('%B %Y')}</span>", unsafe_allow_html=True)
+if page == "📊  Overview":
+    st.markdown("## Overview")
+    st.markdown(f"<span style='color:#6B7B8F'>Portfolio snapshot — {datetime.now().strftime('%B %Y')}</span>", unsafe_allow_html=True)
 
     # Top metrics
     total_aum = sum(c["totalAUM"] for c in st.session_state.all_clients)
@@ -245,11 +281,11 @@ if page == "Client Dashboard":
     with col1:
         metric_card("Total AUM", format_brl(total_aum), f"{len(st.session_state.all_clients)} clients", accent=True)
     with col2:
-        metric_card("Selic", f"{MARKET_BENCHMARKS['selic']['current']}%", f"Previous: {MARKET_BENCHMARKS['selic']['previous']}%")
+        metric_card("Selic Rate", f"{MARKET_BENCHMARKS['selic']['current']}%", f"Previous: {MARKET_BENCHMARKS['selic']['previous']}%")
     with col3:
-        metric_card("CDI Month", format_pct(MARKET_BENCHMARKS["cdi"]["monthly"]), f"12M: {format_pct(MARKET_BENCHMARKS['cdi']['twelveMonth'])}")
+        metric_card("CDI (Month)", format_pct(MARKET_BENCHMARKS["cdi"]["monthly"]), f"12M: {format_pct(MARKET_BENCHMARKS['cdi']['twelveMonth'])}")
     with col4:
-        metric_card("IBOV Month", format_pct(MARKET_BENCHMARKS["ibovespa"]["monthly"]), f"12M: {format_pct(MARKET_BENCHMARKS['ibovespa']['twelveMonth'])}")
+        metric_card("IBOV (Month)", format_pct(MARKET_BENCHMARKS["ibovespa"]["monthly"]), f"12M: {format_pct(MARKET_BENCHMARKS['ibovespa']['twelveMonth'])}")
 
     st.markdown("")
 
@@ -257,22 +293,59 @@ if page == "Client Dashboard":
     col_left, col_right = st.columns(2)
 
     with col_left:
-        st.markdown("#### Benchmarks — February 2026")
-        bench_df = pd.DataFrame([
-            {"Benchmark": "CDI", "Monthly": MARKET_BENCHMARKS["cdi"]["monthly"], "YTD": MARKET_BENCHMARKS["cdi"]["ytd"]},
-            {"Benchmark": "IBOV", "Monthly": MARKET_BENCHMARKS["ibovespa"]["monthly"], "YTD": MARKET_BENCHMARKS["ibovespa"]["ytd"]},
-            {"Benchmark": "IFIX", "Monthly": MARKET_BENCHMARKS["ifix"]["monthly"], "YTD": MARKET_BENCHMARKS["ifix"]["ytd"]},
-            {"Benchmark": "S&P BRL", "Monthly": MARKET_BENCHMARKS["sp500_brl"]["monthly"], "YTD": MARKET_BENCHMARKS["sp500_brl"]["ytd"]},
-        ])
+        st.markdown("#### Market Benchmarks")
+        st.markdown("<span style='color:#6B7B8F;font-size:12px'>Cumulative return — select indexes and timeframe</span>", unsafe_allow_html=True)
+
+        # Selectors
+        sel_col1, sel_col2 = st.columns([3, 2])
+        with sel_col1:
+            selected_benchmarks = st.multiselect(
+                "Indexes",
+                options=list(BENCHMARK_LABELS.keys()),
+                default=["cdi", "ibovespa"],
+                format_func=lambda x: BENCHMARK_LABELS[x],
+                label_visibility="collapsed",
+            )
+        with sel_col2:
+            timeframe = st.radio(
+                "Timeframe",
+                options=["3M", "6M", "12M"],
+                horizontal=True,
+                index=2,
+                label_visibility="collapsed",
+            )
+
+        timeframe_start = {"3M": 9, "6M": 6, "12M": 0}
+        start_idx = timeframe_start.get(timeframe, 0)
+        display_months = BENCHMARK_HISTORY["months"][start_idx:]
+        bench_colors = {"cdi": "#3B82F6", "ibovespa": "#EDB92E", "ifix": "#10B981", "sp500_brl": "#8B5CF6"}
+
         fig = go.Figure()
-        fig.add_trace(go.Bar(name="Monthly", x=bench_df["Benchmark"], y=bench_df["Monthly"], marker_color="#EDB92E"))
-        fig.add_trace(go.Bar(name="YTD", x=bench_df["Benchmark"], y=bench_df["YTD"], marker_color="#3B82F6"))
+        for bench in (selected_benchmarks if selected_benchmarks else ["cdi", "ibovespa"]):
+            monthly_returns = BENCHMARK_HISTORY[bench][start_idx:]
+            x_labels = ["Start"] + list(display_months)
+            y_vals = [0.0]
+            running = 1.0
+            for r in monthly_returns:
+                running *= (1 + r / 100)
+                y_vals.append(round((running - 1) * 100, 2))
+            fig.add_trace(go.Scatter(
+                name=BENCHMARK_LABELS[bench],
+                x=x_labels,
+                y=y_vals,
+                mode="lines+markers",
+                line=dict(color=bench_colors.get(bench, "#999"), width=2),
+                marker=dict(size=4),
+            ))
+
+        fig.add_hline(y=0, line_dash="dot", line_color="rgba(255,255,255,0.12)", line_width=1)
         fig.update_layout(
-            barmode="group", plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-            font_color="#8896AB", height=300, margin=dict(l=20, r=20, t=20, b=40),
-            legend=dict(orientation="h", yanchor="bottom", y=-0.2),
+            plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+            font_color="#8896AB", height=290, margin=dict(l=10, r=10, t=10, b=55),
+            legend=dict(orientation="h", yanchor="bottom", y=-0.3),
+            yaxis_title="Cumulative Return (%)",
         )
-        fig.update_xaxes(gridcolor="rgba(255,255,255,0.06)")
+        fig.update_xaxes(gridcolor="rgba(255,255,255,0.06)", tickangle=-35)
         fig.update_yaxes(gridcolor="rgba(255,255,255,0.06)")
         st.plotly_chart(fig, use_container_width=True)
 
@@ -291,17 +364,17 @@ if page == "Client Dashboard":
                     ret = holdings_data["monthlyReturn"]
                     color = "#10B981" if ret > 0 else "#EF4444"
                     st.markdown(f"<span style='color:{color};font-family:monospace;font-size:14px'>{format_pct(ret)}</span>", unsafe_allow_html=True)
-                    st.markdown(f"<span style='color:#6B7B8F;font-size:11px'>monthly</span>", unsafe_allow_html=True)
+                    st.markdown(f"<span style='color:#6B7B8F;font-size:11px'>this month</span>", unsafe_allow_html=True)
             with col_c:
                 st.markdown(f"<span class='status-badge status-{c['status']}'>{status_info.get('label', c['status'])}</span>", unsafe_allow_html=True)
             st.markdown("<hr style='border-color:rgba(255,255,255,0.04);margin:4px 0'>", unsafe_allow_html=True)
 
-# ─── PAGE: CLIENT DEEP DIVE ──────────────────────────────────────────────────
+# ─── PAGE: CLIENT PORTFOLIO ───────────────────────────────────────────────────
 
-elif page == "Client Deep Dive":
+elif page == "👤  Client Portfolio":
     if not client or not portfolio:
-        st.markdown("## Client Deep Dive")
-        st.info("Select a client from the sidebar to view portfolio details.")
+        st.markdown("## Client Portfolio")
+        st.info("👈 Select a client from the sidebar to view their portfolio details.")
     else:
         st.markdown(f"## {client['name']}")
         st.markdown(f"<span style='color:#6B7B8F'>{PROFILE_LABELS.get(client['profile'], '')} · Client since {client['accountSince']} · Goals: {client['investmentGoals']}</span>", unsafe_allow_html=True)
@@ -319,11 +392,11 @@ elif page == "Client Deep Dive":
 
         st.markdown("")
 
-        # Allocation chart + Risk profile
+        # Allocation chart + investor profile
         col_left, col_right = st.columns(2)
 
         with col_left:
-            st.markdown("#### Allocation by Class")
+            st.markdown("#### Allocation by Asset Class")
             alloc_df = get_allocation_data(portfolio["holdings"])
             fig = px.pie(
                 alloc_df, values="weight", names="label",
@@ -405,23 +478,23 @@ elif page == "Client Deep Dive":
                 use_container_width=True, hide_index=True,
             )
 
-# ─── PAGE: REPORT GENERATOR ──────────────────────────────────────────────────
+# ─── PAGE: REPORTS ────────────────────────────────────────────────────────────
 
-elif page == "Report Generator":
-    st.markdown("## Report Generator")
+elif page == "📄  Reports":
+    st.markdown("## Monthly Report Generator")
 
     if not client or not portfolio:
-        st.info("Select a client from the sidebar, then click 'Generate Monthly Report' to run the 6-agent pipeline.")
+        st.info("👈 Select a client from the sidebar, then click 'Generate Monthly Report' to run the 6-agent pipeline.")
     else:
         st.markdown(f"**Client:** {client['name']} — {PROFILE_LABELS.get(client['profile'], '')} — {format_brl(client['totalAUM'])}")
         st.markdown("")
 
         # Agent pipeline visualization
         agents_list = [
-            ("Portfolio Analyst", "Calculates returns, P&L and allocation by class using pandas"),
+            ("Portfolio Analyst", "Calculates returns, P&L and allocation by asset class"),
             ("Macro Analyst", "Extracts Selic, IPCA, GDP and FX projections from XP macro report"),
             ("Recommendation Engine", "Compares allocation vs. targets, flags drift, generates CVM-compliant suggestions"),
-            ("Letter Writer", "Generates professional 2-page monthly letter in Portuguese"),
+            ("Letter Writer", "Generates professional 2-page monthly investment letter"),
             ("Compliance Reviewer", "CVM review — no buy/sell language, disclaimer present"),
             ("Doc Formatter", "Creates professional .docx with XP branding"),
         ]
@@ -461,7 +534,7 @@ elif page == "Report Generator":
                     st.session_state.agent_statuses[f"{selected}_{agent_name}"] = status
 
                 # Run pipeline
-                with st.spinner("Running agent pipeline..."):
+                with st.spinner("Running 6-agent pipeline..."):
                     try:
                         results = run_pipeline(selected, progress_callback=update_progress)
                         st.session_state.pipeline_results[selected] = results
@@ -480,9 +553,9 @@ elif page == "Report Generator":
                 score = compliance.get("score", 0)
 
                 if passed:
-                    st.success(f"Compliance: PASSED ({score}/100)")
+                    st.success(f"✅ Compliance: PASSED ({score}/100)")
                 else:
-                    st.warning(f"Compliance: NEEDS REVIEW ({score}/100)")
+                    st.warning(f"⚠️ Compliance: NEEDS REVIEW ({score}/100)")
 
                 # Show violations/warnings
                 violations = compliance.get("violations", [])
@@ -512,7 +585,7 @@ elif page == "Report Generator":
                 if output_path and os.path.exists(output_path):
                     with open(output_path, "rb") as f:
                         st.download_button(
-                            label="Download .docx",
+                            label="⬇️ Download .docx",
                             data=f.read(),
                             file_name=os.path.basename(output_path),
                             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -545,13 +618,13 @@ elif page == "Report Generator":
             else:
                 st.markdown("<div style='text-align:center;padding:60px;color:#6B7B8F'>Click 'Generate Monthly Report' to run the 6-agent pipeline</div>", unsafe_allow_html=True)
 
-# ─── PAGE: RECOMMENDATIONS ───────────────────────────────────────────────────
+# ─── PAGE: REBALANCING ────────────────────────────────────────────────────────
 
-elif page == "Recommendations":
-    st.markdown("## Recommendations")
+elif page == "⚖️  Rebalancing":
+    st.markdown("## Rebalancing")
 
     if not client or not portfolio:
-        st.info("Select a client from the sidebar to view rebalancing recommendations.")
+        st.info("👈 Select a client from the sidebar to view rebalancing recommendations.")
     else:
         st.markdown(f"**Client:** {client['name']} — {PROFILE_LABELS.get(client['profile'], '')} — {format_brl(client['totalAUM'])}")
         st.markdown("")
@@ -589,7 +662,7 @@ elif page == "Recommendations":
             for _, row in drift_df.iterrows():
                 drift = row["drift"]
                 color = "#EF4444" if drift > 5 else "#10B981" if drift < -5 else "#6B7B8F"
-                action = "OVERWEIGHT" if drift > 5 else "UNDERWEIGHT" if drift < -5 else "OK"
+                action = "OVERWEIGHT" if drift > 5 else "UNDERWEIGHT" if drift < -5 else "ON TARGET"
                 action_color = color
 
                 st.markdown(f"""
@@ -646,7 +719,7 @@ elif page == "Recommendations":
 
 # ─── PAGE: ADD CLIENT ─────────────────────────────────────────────────────────
 
-elif page == "➕ Add Client":
+elif page == "➕  Add Client":
     st.markdown("## Add New Client")
     st.markdown("<span style='color:#6B7B8F'>Add a client via CRM import or manual entry</span>", unsafe_allow_html=True)
     st.markdown("")

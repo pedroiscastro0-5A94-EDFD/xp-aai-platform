@@ -1,5 +1,21 @@
 """Market benchmarks, target allocations, and AAI profile data."""
 
+# 12 months of historical monthly returns: Mar/25 → Feb/26
+BENCHMARK_HISTORY = {
+    "months": ["Mar/25", "Apr/25", "May/25", "Jun/25", "Jul/25", "Aug/25", "Sep/25", "Oct/25", "Nov/25", "Dec/25", "Jan/26", "Feb/26"],
+    "cdi":      [1.12, 1.09, 1.13, 1.06, 1.08, 1.11, 1.09, 1.07, 1.06, 1.10, 1.08, 1.07],
+    "ibovespa": [-3.20, 2.15, -1.80, 4.30, -0.60, 3.10, -2.40, 5.20, 1.80, -1.10, 2.90, 2.30],
+    "ifix":     [0.90, 1.20, -0.40, 1.80, 0.60, 0.85, 0.50, 1.10, -0.30, 0.75, 0.80, 0.85],
+    "sp500_brl":[-2.10, 4.50, -0.80, 5.20, 2.30, -1.60, 3.80, -0.40, 6.10, 1.20, -2.40, 3.10],
+}
+
+BENCHMARK_LABELS = {
+    "cdi": "CDI",
+    "ibovespa": "IBOV",
+    "ifix": "IFIX",
+    "sp500_brl": "S&P 500 (BRL)",
+}
+
 # February 2026 benchmarks
 MARKET_BENCHMARKS = {
     "month": "2026-02",
@@ -45,11 +61,11 @@ AAI_PROFILE = {
 
 # Asset class display labels and colors
 CLASS_LABELS = {
-    "renda_fixa": "Renda Fixa",
-    "acoes": "Ações",
-    "fiis": "FIIs",
-    "internacional": "Internacional",
-    "cripto": "Cripto",
+    "renda_fixa": "Fixed Income",
+    "acoes": "Equities",
+    "fiis": "REITs",
+    "internacional": "International",
+    "cripto": "Crypto",
 }
 
 CLASS_COLORS = {
@@ -61,14 +77,14 @@ CLASS_COLORS = {
 }
 
 PROFILE_LABELS = {
-    "conservador": "Conservador",
-    "moderado": "Moderado",
-    "arrojado": "Arrojado",
-    "agressivo": "Agressivo",
+    "conservador": "Conservative",
+    "moderado": "Moderate",
+    "arrojado": "Aggressive",
+    "agressivo": "Very Aggressive",
 }
 
 STATUS_MAP = {
-    "up_to_date": {"label": "Em dia", "color": "#10B981"},
+    "up_to_date": {"label": "Up to date", "color": "#10B981"},
     "needs_follow_up": {"label": "Follow-up", "color": "#EDB92E"},
-    "overdue": {"label": "Atrasado", "color": "#EF4444"},
+    "overdue": {"label": "Overdue", "color": "#EF4444"},
 }
