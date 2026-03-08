@@ -13,34 +13,42 @@ data:
         name: XP AAI Orchestrator
       nodes:
         # ─── INPUT NODES ───────────────────────────────────────────────────
-        '[input_portfolio]:text "Portfolio Data"':
+        '[input_portfolio]:readFile "Portfolio Data"':
           data:
-            text: "{{portfolio_data}}"
+            path: "input/XP - Albert_s portfolio.txt"
+            usePathInput: false
+            errorOnMissingFile: false
           outgoingConnections:
-            - output->"Subgraph" sg_portfolio_analyst/portfolio_data
-            - output->"Subgraph" sg_recommendation_engine/portfolio_data
+            - content->"Subgraph" sg_portfolio_analyst/portfolio_data
+            - content->"Subgraph" sg_recommendation_engine/portfolio_data
           visualData: 100/200/280/1//
 
-        '[input_risk_profile]:text "Risk Profile"':
+        '[input_risk_profile]:readFile "Risk Profile"':
           data:
-            text: "{{risk_profile}}"
+            path: "input/XP - Albert_s risk profile.txt"
+            usePathInput: false
+            errorOnMissingFile: false
           outgoingConnections:
-            - output->"Subgraph" sg_recommendation_engine/risk_profile
-            - output->"Subgraph" sg_letter_writer/risk_profile
+            - content->"Subgraph" sg_recommendation_engine/risk_profile
+            - content->"Subgraph" sg_letter_writer/risk_profile
           visualData: 100/400/280/2//
 
-        '[input_macro_report]:text "Macro Report"':
+        '[input_macro_report]:readFile "Macro Report"':
           data:
-            text: "{{macro_report}}"
+            path: "input/XP - Macro analysis.txt"
+            usePathInput: false
+            errorOnMissingFile: false
           outgoingConnections:
-            - output->"Subgraph" sg_macro_analyst/macro_report
+            - content->"Subgraph" sg_macro_analyst/macro_report
           visualData: 100/600/280/3//
 
-        '[input_profitability_csv]:text "Profitability CSV"':
+        '[input_profitability_csv]:readFile "Profitability CSV"':
           data:
-            text: "{{profitability_csv}}"
+            path: "input/profitability_calc_wip.csv"
+            usePathInput: false
+            errorOnMissingFile: false
           outgoingConnections:
-            - output->"Subgraph" sg_portfolio_analyst/profitability_csv
+            - content->"Subgraph" sg_portfolio_analyst/profitability_csv
           visualData: 100/800/280/4//
 
         # ─── AGENT 1: PORTFOLIO ANALYST (runs in parallel with Agent 2) ───
