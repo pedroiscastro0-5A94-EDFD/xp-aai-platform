@@ -168,6 +168,7 @@ def compute_client_monthly_history(holdings, target_12m_return=None):
     # Map each asset class to its closest benchmark
     bench_map = {
         "renda_fixa": "cdi",
+        "multimercado": "cdi",  # multi-market funds typically target CDI+alpha
         "acoes": "ibovespa",
         "fiis": "ifix",
         "internacional": "sp500_brl",

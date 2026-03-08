@@ -30,10 +30,10 @@ MARKET_BENCHMARKS = {
 
 # Target allocation ranges by risk profile (percentage)
 TARGET_ALLOCATIONS = {
-    "conservador": {"renda_fixa": 70, "acoes": 10, "fiis": 10, "internacional": 8, "cripto": 2},
-    "moderado":    {"renda_fixa": 45, "acoes": 25, "fiis": 15, "internacional": 12, "cripto": 3},
-    "arrojado":    {"renda_fixa": 20, "acoes": 40, "fiis": 15, "internacional": 18, "cripto": 7},
-    "agressivo":   {"renda_fixa": 10, "acoes": 45, "fiis": 10, "internacional": 25, "cripto": 10},
+    "conservador": {"renda_fixa": 60, "multimercado": 10, "acoes": 10, "fiis": 10, "internacional": 8, "cripto": 2},
+    "moderado":    {"renda_fixa": 35, "multimercado": 10, "acoes": 25, "fiis": 15, "internacional": 12, "cripto": 3},
+    "arrojado":    {"renda_fixa": 10, "multimercado": 15, "acoes": 35, "fiis": 15, "internacional": 18, "cripto": 7},
+    "agressivo":   {"renda_fixa": 5,  "multimercado": 10, "acoes": 40, "fiis": 10, "internacional": 25, "cripto": 10},
 }
 
 # Financial advisor profile
@@ -62,6 +62,7 @@ AAI_PROFILE = {
 # Asset class display labels and colors
 CLASS_LABELS = {
     "renda_fixa": "Fixed Income",
+    "multimercado": "Multi-Market",
     "acoes": "Equities",
     "fiis": "REITs",
     "internacional": "International",
@@ -70,6 +71,7 @@ CLASS_LABELS = {
 
 CLASS_COLORS = {
     "renda_fixa": "#3B82F6",
+    "multimercado": "#EC4899",
     "acoes": "#EDB92E",
     "fiis": "#10B981",
     "internacional": "#8B5CF6",

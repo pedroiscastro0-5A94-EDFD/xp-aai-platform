@@ -251,14 +251,14 @@ MOCK_HOLDINGS = {
             {"asset": "Hapvida", "ticker": "HAPV3", "class": "acoes", "quantity": 1547, "avgPrice": 15.62, "currentPrice": 10.49, "weight": 5.06},
             # Fundos de Investimentos - Renda Fixa (est. CDI accrual through Feb 2026)
             {"asset": "Riza Lotus Plus Advisory FIC FIRF", "ticker": "RIZA-LOTUS", "class": "renda_fixa", "quantity": 1, "avgPrice": 83267.36, "currentPrice": 98294.70, "weight": 30.63},
-            {"asset": "Brave I FIC FIM CP", "ticker": "BRAVE-I", "class": "renda_fixa", "quantity": 1, "avgPrice": 60940.01, "currentPrice": 74163.91, "weight": 23.11},
+            {"asset": "Brave I FIC FIM CP", "ticker": "BRAVE-I", "class": "multimercado", "quantity": 1, "avgPrice": 60940.01, "currentPrice": 74163.91, "weight": 23.11},
             {"asset": "Trend Investback FIC FIRF Simples", "ticker": "TREND-INV", "class": "renda_fixa", "quantity": 1, "avgPrice": 263.29, "currentPrice": 312.16, "weight": 0.10},
             # Fundos - Multimercado/Ações (est. market returns through Feb 2026)
             {"asset": "Truxt Long Bias Advisory FIC FIM", "ticker": "TRUXT-LB", "class": "acoes", "quantity": 1, "avgPrice": 14250.00, "currentPrice": 12647.27, "weight": 3.94},
             {"asset": "STK Long Biased FIC FIA", "ticker": "STK-LB", "class": "acoes", "quantity": 1, "avgPrice": 11400.00, "currentPrice": 9551.05, "weight": 2.98},
             {"asset": "Constellation Institucional Advisory FIC FIA", "ticker": "CONST-FIA", "class": "acoes", "quantity": 1, "avgPrice": 11400.00, "currentPrice": 8220.77, "weight": 2.56},
             # Fundos - Hedge (est. CDI accrual through Feb 2026)
-            {"asset": "Ibiuna Hedge ST Advisory FIC FIM", "ticker": "IBIUNA-HST", "class": "renda_fixa", "quantity": 1, "avgPrice": 8674.51, "currentPrice": 11856.24, "weight": 3.69},
+            {"asset": "Ibiuna Hedge ST Advisory FIC FIM", "ticker": "IBIUNA-HST", "class": "multimercado", "quantity": 1, "avgPrice": 8674.51, "currentPrice": 11856.24, "weight": 3.69},
             # Renda Fixa (est. CDI accrual through Feb 2026)
             {"asset": "CDB Banco C6 Consignado SET/2024", "ticker": "CDB-C6", "class": "renda_fixa", "quantity": 1, "avgPrice": 30000.00, "currentPrice": 41369.24, "weight": 12.89},
         ],
