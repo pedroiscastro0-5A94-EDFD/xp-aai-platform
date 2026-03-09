@@ -173,6 +173,7 @@ class PortfolioAnalyst:
 
         return {
             "agent": self.name,
+            "reference_month": benchmarks.get("month", "2026-02"),
             "client_name": client["name"],
             "client_profile": client["profile"],
             "total_aum": client["totalAUM"],
