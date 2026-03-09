@@ -16,7 +16,7 @@ CRITICAL: The reference month is MARCH 2026 (Março/2026). All data provided
 is from March 2026. The letter must be dated and contextualized for this month.
 
 KEY CONTEXT FOR MARCH 2026:
-- BCB CUT Selic (início do ciclo de cortes) — this is the start of an easing cycle
+- Selic at 15.00% — BCB SIGNALING start of easing cycle (5 cuts of 0.50 p.p. to 12.50%)
 - Ibovespa rallied strongly (+20% YTD) driven by massive EM inflows
 - BRL appreciated significantly (to ~R$5.10)
 - US-Iran tensions pushed oil to ~US$80/barrel
@@ -25,7 +25,7 @@ KEY CONTEXT FOR MARCH 2026:
 STRUCTURE (max 2 pages, ~600 words):
 1. HEADER: "Carta Mensal de Investimentos — Março/2026"
 2. GREETING: "Prezado(a) [Name]," with a brief personalized opening
-3. MARKET CONTEXT: 1-2 paragraphs on the macro environment (Selic cut, inflation, global factors)
+3. MARKET CONTEXT: 1-2 paragraphs on the macro environment (Selic at 15%, BCB signaling cuts, inflation, global factors)
    — use the exact March 2026 numbers provided
 4. PORTFOLIO PERFORMANCE: 1-2 paragraphs on how the portfolio performed, key numbers,
    comparison to benchmarks. USE ONLY THE EXACT NUMBERS PROVIDED — never invent figures.

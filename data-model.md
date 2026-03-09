@@ -261,7 +261,7 @@ const MOCK_HOLDINGS = {
 ## Transaction History
 
 ```javascript
-// Transactions for February 2026 (latest month)
+// Transactions (latest month)
 const MOCK_TRANSACTIONS = {
   "cli_001": [
     { date: "2026-02-03", type: "buy", asset: "HGLG11", ticker: "HGLG11", quantity: 100, price: 168.50, total: 16850, reason: "Aumento de exposição a FIIs logísticos" },
@@ -304,16 +304,17 @@ const MOCK_TRANSACTIONS = {
 ## Market Benchmarks
 
 ```javascript
-// February 2026 benchmarks
+// March 2026 benchmarks
+// Source: XP Macro Mensal (5 de março de 2026)
 const MARKET_BENCHMARKS = {
-  month: "2026-02",
-  cdi: { monthly: 1.07, ytd: 2.15, twelveMonth: 13.20 },
-  ibovespa: { monthly: 2.30, ytd: 5.10, twelveMonth: 18.50 },
-  ifix: { monthly: 0.85, ytd: 1.90, twelveMonth: 10.20 },
-  sp500_brl: { monthly: 3.10, ytd: 7.80, twelveMonth: 25.30 },
-  ipca: { monthly: 0.45, ytd: 0.92, twelveMonth: 5.20 },
-  selic: { current: 14.25, previous: 13.75 },
-  dolar: { current: 5.85, monthlyChange: -1.20 },
+  month: "2026-03",
+  cdi: { monthly: 1.17, ytd: 3.54, twelveMonth: 14.50 },
+  ibovespa: { monthly: 5.00, ytd: 19.80, twelveMonth: 22.50 },
+  ifix: { monthly: 2.80, ytd: 7.70, twelveMonth: 12.80 },
+  sp500_brl: { monthly: -2.00, ytd: -6.40, twelveMonth: 8.50 },
+  ipca: { monthly: 0.35, ytd: 1.50, twelveMonth: 3.95 },
+  selic: { current: 15.00, previous: 14.75 },
+  dolar: { current: 5.10, monthlyChange: -2.30 },
 };
 ```
 

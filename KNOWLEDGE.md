@@ -105,7 +105,7 @@ The key insight: Portfolio and Macro analysis are **independent** — they don't
 - Positions with P&L < -25% → "extreme_loss" alert
 - Positions with P&L > +30% → "extreme_gain" alert
 
-**For Albert specifically (Feb 2026 prices from B3/Yahoo Finance):**
+**For Albert specifically (Mar 2026 prices from B3/Yahoo Finance):**
 - LREN3: -46.4% loss (extreme alert)
 - ARZZ3: -39.3% loss (extreme alert)
 - HAPV3: -32.8% loss (extreme alert)
@@ -115,14 +115,15 @@ The key insight: Portfolio and Macro analysis are **independent** — they don't
 **Output:** Structured JSON with every metric calculated by code.
 
 ### Agent 2: Macro Analyst
-**What it does:** Reads XP's 50+ page macro report and extracts the key numbers an advisor needs.
+**What it does:** Reads XP's 50+ page macro report (XP Macro Mensal, 5 de março de 2026) and extracts the key numbers an advisor needs.
 
-**Key projections extracted:**
-- Selic: 14.25% (raised 50bps, hiking cycle continues)
-- IPCA: 6.1% forecast for 2025 (above target)
-- GDP: 2.0% for 2025, 1.0% for 2026
-- BRL/USD: R$6.20 EOY 2025, R$6.40 EOY 2026
-- Fiscal: Primary balance target achievable but debt rising
+**Key projections extracted (March 2026):**
+- Selic: 15.00% (BCB signaling start of easing cycle — 5 cuts of 0.50 p.p. to reach 12.50% by year-end)
+- IPCA: 4.3% actual 2025, 3.8% forecast 2026, 4.0% forecast 2027 (oil prices upside risk)
+- GDP: 2.3% actual 2025, 2.0% forecast 2026, 1.2% forecast 2027
+- BRL/USD: R$5.10 current (appreciated from R$5.49 EOY 2025), R$5.60 forecast EOY 2026, R$5.80 EOY 2027
+- Fiscal: Primary deficit 0.4% GDP in 2026, public debt rising to 83.4% GDP
+- Context: Ibovespa +20% YTD, massive EM inflows, US-Iran tensions pushing oil to ~US$80/barrel
 
 **LLM role:** GPT-4o reads the dense macro text and produces a concise, structured summary. Temperature 0.2 (factual, not creative).
 
@@ -564,7 +565,7 @@ Instead of hoping the LLM produces compliant text, I built compliance into the a
 1. **"Code for math, LLM for language"** — This is the headline design decision. Lead with it.
 2. **The compliance gate** — Show you understand CVM regulations matter in production.
 3. **The platform vision** — You didn't just fix one letter, you built a tool an advisor would use daily.
-4. **Albert's specific issues** — HAPV3 at -74.58% is a great concrete example of why alerts matter.
+4. **Albert's specific issues** — LREN3 at -46.4% and ARZZ3 at -39.3% are great concrete examples of why automated alerts matter.
 5. **Add Client = real tool, not just a demo** — Advisors can add clients via CRM or manual entry and immediately run the agent pipeline for them.
 6. **Dynamic architecture** — Everything works for new clients, not just hardcoded mocks. This proves the system scales.
 7. **Deployed and shareable** — Not just local code: it's a live URL anyone can try. Shows you think beyond "it works on my machine."
@@ -615,12 +616,12 @@ xp-challenge/
 │   ├── XP - Albert_s portfolio.pdf  # PDF version
 │   ├── XP - Albert_s risk profile.txt  # Original: Albert's risk profile
 │   ├── XP - Albert_s risk profile.pdf  # PDF version
-│   ├── XP - Macro analysis.txt     # Original: XP macro report
+│   ├── XP - Macro analysis.txt     # XP Macro Mensal (5 de março de 2026)
 │   ├── XP - Macro analysis.pdf     # PDF version
 │   ├── profitability_calc_wip.csv   # Original: stock price data for monthly returns
 │   ├── clients.csv                  # Generated: all 7 clients (profile, AUM, goals, etc.)
 │   ├── holdings.csv                 # Generated: all 86 holdings (prices, P&L, weights)
-│   └── transactions.csv            # Generated: all Feb 2026 transactions
+│   └── transactions.csv            # Generated: all transactions
 ├── output/                          # Generated deliverables
 │   ├── monthly_report_albert.docx   # Albert's monthly letter (original name)
 │   ├── monthly_report_albert_da_silva.docx  # Albert's letter (full name)
