@@ -53,7 +53,7 @@ class MacroAnalyst:
         benchmark_context = (
             f"REFERENCE MONTH: March 2026 (Março/2026)\n\n"
             f"Current market data (March 2026):\n"
-            f"- Selic: {benchmarks['selic']['current']}% (raised from {benchmarks['selic']['previous']}% — contractionary monetary policy)\n"
+            f"- Selic: {benchmarks['selic']['current']}% (last hike from {benchmarks['selic']['previous']}%) — BCB signaling start of easing cycle with 5 cuts of 0.50 p.p. to 12.50%\n"
             f"- CDI monthly: {benchmarks['cdi']['monthly']}%\n"
             f"- CDI YTD: {benchmarks['cdi']['ytd']}%, 12M: {benchmarks['cdi']['twelveMonth']}%\n"
             f"- IBOVESPA monthly: {benchmarks['ibovespa']['monthly']}%, YTD: {benchmarks['ibovespa']['ytd']}%, 12M: {benchmarks['ibovespa']['twelveMonth']}%\n"
@@ -100,9 +100,10 @@ class MacroAnalyst:
                 "selic": {
                     "current": benchmarks["selic"]["current"],
                     "previous": benchmarks["selic"]["previous"],
-                    "direction": "hiking" if benchmarks["selic"]["current"] > benchmarks["selic"]["previous"] else "cutting",
+                    "direction": "signaling_cuts",
                     "change_bps": round((benchmarks["selic"]["current"] - benchmarks["selic"]["previous"]) * 100),
-                    "note": f"Selic raised {round((benchmarks['selic']['current'] - benchmarks['selic']['previous']) * 100):.0f}bps to {benchmarks['selic']['current']}%, contractionary monetary policy continues",
+                    "target_eoy_2026": 12.50,
+                    "note": f"Selic at {benchmarks['selic']['current']}% (last hike of {round((benchmarks['selic']['current'] - benchmarks['selic']['previous']) * 100):.0f}bps from {benchmarks['selic']['previous']}%). BCB signaling 5 consecutive cuts of 0.50 p.p. starting March, targeting 12.50% by year-end.",
                 },
                 "ipca": {
                     "monthly": benchmarks["ipca"]["monthly"],
@@ -143,13 +144,12 @@ class MacroAnalyst:
 
     def _generate_fallback_analysis(self, benchmarks: dict) -> str:
         """Generate analysis without API (uses structured data only). Reference: March 2026."""
-        selic_cut = abs(round((benchmarks['selic']['current'] - benchmarks['selic']['previous']) * 100))
-        selic_dir = "Cut" if benchmarks['selic']['current'] < benchmarks['selic']['previous'] else "Raised"
+        selic_hike = abs(round((benchmarks['selic']['current'] - benchmarks['selic']['previous']) * 100))
         return (
             "REFERENCE: March 2026 (Março/2026)\n\n"
             "KEY PROJECTIONS:\n"
-            f"- Selic: {selic_dir} {selic_cut}bps to {benchmarks['selic']['current']}% from {benchmarks['selic']['previous']}%. "
-            "Start of monetary easing cycle. XP projects 5 consecutive cuts of 0.50 p.p. to reach 12.50% by year-end.\n"
+            f"- Selic: Currently at {benchmarks['selic']['current']}% (last hike of {selic_hike}bps from {benchmarks['selic']['previous']}%). "
+            "BCB signaling start of easing cycle. XP projects 5 consecutive cuts of 0.50 p.p. to reach 12.50% by year-end.\n"
             f"- IPCA: Running at {benchmarks['ipca']['twelveMonth']}% (12M), declining from 4.3% in 2025. "
             "XP projects 3.8% for 2026 and 4.0% for 2027. Oil prices are upside risk.\n"
             "- GDP: 2025 closed at 2.3% (down from 3.4% in 2024). "

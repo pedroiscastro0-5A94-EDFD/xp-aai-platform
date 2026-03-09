@@ -5,7 +5,7 @@
 #           Ibovespa +20% YTD, BRL appreciated to ~R$5.10, massive EM inflows.
 BENCHMARK_HISTORY = {
     "months": ["Apr/25", "May/25", "Jun/25", "Jul/25", "Aug/25", "Sep/25", "Oct/25", "Nov/25", "Dec/25", "Jan/26", "Feb/26", "Mar/26"],
-    "cdi":      [1.02, 1.05, 1.07, 1.08, 1.10, 1.12, 1.14, 1.15, 1.17, 1.18, 1.17, 1.16],
+    "cdi":      [1.02, 1.05, 1.07, 1.08, 1.10, 1.12, 1.14, 1.15, 1.17, 1.18, 1.17, 1.17],
     "ibovespa": [1.80, -2.50, 3.20, -1.50, -3.00, -2.80, 4.50, 1.20, -1.50, 7.20, 6.50, 5.00],
     "ifix":     [0.80, -0.30, 1.20, 0.50, 0.30, -0.50, 0.80, 0.40, 0.60, 2.50, 2.20, 2.80],
     "sp500_brl":[3.50, -1.50, 4.00, 1.80, -2.50, 2.80, -1.20, 5.00, 0.50, -3.00, -1.50, -2.00],
@@ -24,12 +24,12 @@ BENCHMARK_LABELS = {
 #   massive EM inflows, BRL appreciated to ~R$5.10, US-Iran tensions.
 MARKET_BENCHMARKS = {
     "month": "2026-03",
-    "cdi": {"monthly": 1.16, "ytd": 3.53, "twelveMonth": 14.50},
+    "cdi": {"monthly": 1.17, "ytd": 3.54, "twelveMonth": 14.50},
     "ibovespa": {"monthly": 5.00, "ytd": 19.80, "twelveMonth": 22.50},
     "ifix": {"monthly": 2.80, "ytd": 7.70, "twelveMonth": 12.80},
     "sp500_brl": {"monthly": -2.00, "ytd": -6.40, "twelveMonth": 8.50},
     "ipca": {"monthly": 0.35, "ytd": 1.50, "twelveMonth": 3.95},
-    "selic": {"current": 14.50, "previous": 15.00},
+    "selic": {"current": 15.00, "previous": 14.75},
     "dolar": {"current": 5.10, "monthlyChange": -2.30},
 }
 

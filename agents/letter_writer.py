@@ -103,11 +103,10 @@ class LetterWriter:
             if mc is not None:
                 monthly_changes_text += f"- {pos['ticker']} ({pos['asset']}): {mc:+.2f}% last month\n"
 
-        # Get Selic change details
-        selic_current = key_proj.get('selic', {}).get('current', 14.50)
-        selic_previous = key_proj.get('selic', {}).get('previous', 15.00)
-        selic_change = abs(round((selic_current - selic_previous) * 100))
-        selic_action = "cut" if selic_current < selic_previous else "raised"
+        # Get Selic details — BCB at 15.00%, signaling cuts to 12.50%
+        selic_current = key_proj.get('selic', {}).get('current', 15.00)
+        selic_previous = key_proj.get('selic', {}).get('previous', 14.75)
+        selic_hike = abs(round((selic_current - selic_previous) * 100))
 
         user_prompt = (
             f"REFERENCE MONTH: MARCH 2026 (Março/2026)\n\n"
@@ -128,7 +127,7 @@ class LetterWriter:
             f"MONTHLY STOCK RETURNS (March 2026):\n"
             f"{monthly_changes_text or 'No CSV data available'}\n\n"
             f"MACRO CONTEXT (March 2026):\n"
-            f"- Selic: {selic_action} {selic_change}bps to {selic_current}% from {selic_previous}% — start of monetary easing cycle\n"
+            f"- Selic: at {selic_current}% (last hike of {selic_hike}bps from {selic_previous}%) — BCB signaling easing cycle with 5 cuts of 0.50 p.p. to 12.50%\n"
             f"- IPCA: {key_proj.get('ipca', {}).get('twelve_month', 3.95)}% 12M ({key_proj.get('ipca', {}).get('note', '')})\n"
             f"- GDP: 2025 closed at {key_proj.get('gdp', {}).get('actual_2025', 2.3)}%, forecast {key_proj.get('gdp', {}).get('forecast_2026', 2.0)}% for 2026\n"
             f"- BRL/USD: R${key_proj.get('fx', {}).get('current', 5.10)}\n"
@@ -180,14 +179,13 @@ class LetterWriter:
         rec_text = recommendations.get("recommendation_text", "")
 
         monthly_ret = returns.get("monthly", 0)
-        cdi_monthly = benchmark.get("monthly", {}).get("cdi", 1.16)
+        cdi_monthly = benchmark.get("monthly", {}).get("cdi", 1.17)
         vs_cdi = benchmark.get("monthly", {}).get("vs_cdi", 0)
 
-        # Selic context
-        selic_current = key_proj.get('selic', {}).get('current', 14.50)
-        selic_previous = key_proj.get('selic', {}).get('previous', 15.00)
-        selic_change = abs(round((selic_current - selic_previous) * 100))
-        selic_direction = "reduziu" if selic_current < selic_previous else "elevou" if selic_current > selic_previous else "manteve"
+        # Selic context — at 15.00%, BCB signaling cuts to 12.50%
+        selic_current = key_proj.get('selic', {}).get('current', 15.00)
+        selic_previous = key_proj.get('selic', {}).get('previous', 14.75)
+        selic_hike = abs(round((selic_current - selic_previous) * 100))
 
         # Build monthly stock returns section from CSV data
         positions = portfolio_analysis.get("positions", [])
@@ -210,13 +208,13 @@ Espero que esteja bem. Apresento a seguir o relatório mensal de sua carteira de
 
 Cenário Macroeconômico
 
-O mês de março de 2026 foi marcado por uma importante mudança na política monetária brasileira. O Comitê de Política Monetária (Copom) {selic_direction} a taxa Selic em {selic_change} pontos-base, para {selic_current}% ao ano (ante {selic_previous}% anteriormente), sinalizando o início de um ciclo de afrouxamento monetário. A XP projeta mais 4 cortes consecutivos de 0,50 p.p., levando a Selic a 12,50% ao final de 2026. A inflação acumula {key_proj.get('ipca', {}).get('twelve_month', 3.95)}% em 12 meses, com projeção de 3,8% para 2026. A economia brasileira encerrou 2025 com crescimento de {key_proj.get('gdp', {}).get('actual_2025', 2.3)}%, e a projeção para 2026 é de {key_proj.get('gdp', {}).get('forecast_2026', 2.0)}%.
+O mês de março de 2026 foi marcado por uma importante mudança na política monetária brasileira. Com a taxa Selic em {selic_current}% ao ano, o Banco Central sinalizou o início de um ciclo de afrouxamento monetário. A XP projeta 5 cortes consecutivos de 0,50 p.p. a partir deste mês, levando a Selic a 12,50% ao final de 2026. A inflação acumula {key_proj.get('ipca', {}).get('twelve_month', 3.95)}% em 12 meses, com projeção de 3,8% para 2026. A economia brasileira encerrou 2025 com crescimento de {key_proj.get('gdp', {}).get('actual_2025', 2.3)}%, e a projeção para 2026 é de {key_proj.get('gdp', {}).get('forecast_2026', 2.0)}%.
 
 No cenário externo, as tensões entre EUA e Irã elevaram o petróleo a cerca de US$80/barril, enquanto fluxos recordes para mercados emergentes impulsionaram o Ibovespa a uma alta acumulada de aproximadamente 20% no ano. O real se apreciou significativamente, com o dólar cotado a R${key_proj.get('fx', {}).get('current', 5.10)}, beneficiado pela rotação global para ativos emergentes.
 
 Desempenho da Carteira
 
-Em março de 2026, sua carteira apresentou rentabilidade de {monthly_ret:.2f}%, {"superando o" if vs_cdi > 0 else "ficando abaixo do"} CDI de {cdi_monthly:.2f}% em {abs(vs_cdi):.2f} pontos percentuais. No acumulado do ano (janeiro-março/2026), o retorno é de {returns.get('ytd', 0):.2f}%, e nos últimos 12 meses, de {returns.get('twelve_month', 0):.2f}%. O início do ciclo de cortes na Selic tende a beneficiar posições em renda fixa prefixada e FIIs, enquanto o forte rali das ações brasileiras contribuiu positivamente para as posições em renda variável.
+Em março de 2026, sua carteira apresentou rentabilidade de {monthly_ret:.2f}%, {"superando o" if vs_cdi > 0 else "ficando abaixo do"} CDI de {cdi_monthly:.2f}% em {abs(vs_cdi):.2f} pontos percentuais. No acumulado do ano (janeiro-março/2026), o retorno é de {returns.get('ytd', 0):.2f}%, e nos últimos 12 meses, de {returns.get('twelve_month', 0):.2f}%. A perspectiva de início do ciclo de cortes na Selic tende a beneficiar posições em renda fixa prefixada e FIIs, enquanto o forte rali das ações brasileiras contribuiu positivamente para as posições em renda variável.
 
 {f"Rentabilidade Mensal das Ações{chr(10)}{chr(10)}{stock_returns_text}" if stock_returns_text else ""}
 Posicionamento e Recomendações
