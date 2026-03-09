@@ -12,14 +12,21 @@ from data.market import AAI_PROFILE, PROFILE_LABELS
 SYSTEM_PROMPT = """You are a senior investment advisor (assessor de investimentos) at XP Investimentos.
 Write a monthly investment letter ("carta mensal") in Brazilian Portuguese for a client.
 
-CRITICAL: The reference month is FEBRUARY 2026 (Fevereiro/2026). All data provided
-is from February 2026. The letter must be dated and contextualized for this month.
+CRITICAL: The reference month is MARCH 2026 (Março/2026). All data provided
+is from March 2026. The letter must be dated and contextualized for this month.
+
+KEY CONTEXT FOR MARCH 2026:
+- BCB CUT Selic (início do ciclo de cortes) — this is the start of an easing cycle
+- Ibovespa rallied strongly (+20% YTD) driven by massive EM inflows
+- BRL appreciated significantly (to ~R$5.10)
+- US-Iran tensions pushed oil to ~US$80/barrel
+- Presidential campaign heating up (election in Oct 2026)
 
 STRUCTURE (max 2 pages, ~600 words):
-1. HEADER: "Carta Mensal de Investimentos — Fevereiro/2026"
+1. HEADER: "Carta Mensal de Investimentos — Março/2026"
 2. GREETING: "Prezado(a) [Name]," with a brief personalized opening
-3. MARKET CONTEXT: 1-2 paragraphs on the macro environment (Selic, inflation, global factors)
-   — use the exact February 2026 numbers provided
+3. MARKET CONTEXT: 1-2 paragraphs on the macro environment (Selic cut, inflation, global factors)
+   — use the exact March 2026 numbers provided
 4. PORTFOLIO PERFORMANCE: 1-2 paragraphs on how the portfolio performed, key numbers,
    comparison to benchmarks. USE ONLY THE EXACT NUMBERS PROVIDED — never invent figures.
 5. POSITIONING & OUTLOOK: 1 paragraph on current allocation rationale and forward view
@@ -35,7 +42,7 @@ STYLE RULES:
 - Include disclaimer at the end
 
 IMPORTANT: Use ONLY the numbers provided in the data. Never fabricate returns or values.
-All financial figures must come from the input data. The letter is for FEBRUARY 2026."""
+All financial figures must come from the input data. The letter is for MARCH 2026."""
 
 
 class LetterWriter:
@@ -97,38 +104,41 @@ class LetterWriter:
                 monthly_changes_text += f"- {pos['ticker']} ({pos['asset']}): {mc:+.2f}% last month\n"
 
         # Get Selic change details
-        selic_current = key_proj.get('selic', {}).get('current', 14.25)
-        selic_previous = key_proj.get('selic', {}).get('previous', 13.75)
-        selic_change = round((selic_current - selic_previous) * 100)
+        selic_current = key_proj.get('selic', {}).get('current', 14.50)
+        selic_previous = key_proj.get('selic', {}).get('previous', 15.00)
+        selic_change = abs(round((selic_current - selic_previous) * 100))
+        selic_action = "cut" if selic_current < selic_previous else "raised"
 
         user_prompt = (
-            f"REFERENCE MONTH: FEBRUARY 2026 (Fevereiro/2026)\n\n"
+            f"REFERENCE MONTH: MARCH 2026 (Março/2026)\n\n"
             f"Write the monthly letter for:\n"
             f"CLIENT: {client['name']}\n"
             f"PROFILE: {profile_label}\n"
             f"GOALS: {client['investmentGoals']}\n"
             f"AUM: R${client['totalAUM']:,.2f}\n\n"
-            f"PORTFOLIO PERFORMANCE (February 2026):\n"
-            f"- Monthly return (Feb/26): {returns.get('monthly', 0):.2f}%\n"
-            f"- YTD return (Jan-Feb/26): {returns.get('ytd', 0):.2f}%\n"
+            f"PORTFOLIO PERFORMANCE (March 2026):\n"
+            f"- Monthly return (Mar/26): {returns.get('monthly', 0):.2f}%\n"
+            f"- YTD return (Jan-Mar/26): {returns.get('ytd', 0):.2f}%\n"
             f"- 12-month return: {returns.get('twelve_month', 0):.2f}%\n"
             f"- vs CDI (month): {benchmark.get('monthly', {}).get('vs_cdi', 0):+.2f}pp\n"
             f"- vs IBOVESPA (month): {benchmark.get('monthly', {}).get('vs_ibovespa', 0):+.2f}pp\n"
             f"- Current allocation: {alloc_text}\n"
             f"- Number of positions: {portfolio_analysis.get('summary', {}).get('num_positions', 0)}\n\n"
             f"ALERTS:\n{alerts_text or 'None'}\n\n"
-            f"MONTHLY STOCK RETURNS (February 2026):\n"
+            f"MONTHLY STOCK RETURNS (March 2026):\n"
             f"{monthly_changes_text or 'No CSV data available'}\n\n"
-            f"MACRO CONTEXT (February 2026):\n"
-            f"- Selic: {selic_current}% (raised {selic_change}bps from {selic_previous}% — contractionary monetary policy)\n"
-            f"- IPCA: {key_proj.get('ipca', {}).get('twelve_month', 5.2)}% 12M ({key_proj.get('ipca', {}).get('note', '')})\n"
-            f"- GDP: 2025 closed at {key_proj.get('gdp', {}).get('actual_2025', 2.0)}%, forecast {key_proj.get('gdp', {}).get('forecast_2026', 1.0)}% for 2026\n"
-            f"- BRL/USD: R${key_proj.get('fx', {}).get('current', 5.85)}\n\n"
+            f"MACRO CONTEXT (March 2026):\n"
+            f"- Selic: {selic_action} {selic_change}bps to {selic_current}% from {selic_previous}% — start of monetary easing cycle\n"
+            f"- IPCA: {key_proj.get('ipca', {}).get('twelve_month', 3.95)}% 12M ({key_proj.get('ipca', {}).get('note', '')})\n"
+            f"- GDP: 2025 closed at {key_proj.get('gdp', {}).get('actual_2025', 2.3)}%, forecast {key_proj.get('gdp', {}).get('forecast_2026', 2.0)}% for 2026\n"
+            f"- BRL/USD: R${key_proj.get('fx', {}).get('current', 5.10)}\n"
+            f"- Ibovespa +20% YTD, massive EM inflows\n"
+            f"- US-Iran tensions, oil at ~US$80/barrel\n\n"
             f"RECOMMENDATIONS (already CVM-compliant):\n"
             f"{recommendations.get('recommendation_text', 'Portfolio aligned with profile.')}\n\n"
             f"ADVISOR: {AAI_PROFILE['name']}, {AAI_PROFILE['cnpi']}\n"
             f"DISCLAIMER: {AAI_PROFILE['disclaimer']}\n\n"
-            f"Write the complete letter in Portuguese for FEBRUARY 2026. Max 600 words."
+            f"Write the complete letter in Portuguese for MARCH 2026. Max 600 words."
         )
 
         if self.client:
@@ -162,7 +172,7 @@ class LetterWriter:
     def _generate_fallback_letter(
         self, client, portfolio_analysis, macro_analysis, recommendations
     ) -> str:
-        """Generate letter without API using template. Reference: February 2026."""
+        """Generate letter without API using template. Reference: March 2026."""
         profile_label = PROFILE_LABELS.get(client["profile"], client["profile"])
         returns = portfolio_analysis.get("returns", {})
         benchmark = portfolio_analysis.get("benchmark_comparison", {})
@@ -170,14 +180,14 @@ class LetterWriter:
         rec_text = recommendations.get("recommendation_text", "")
 
         monthly_ret = returns.get("monthly", 0)
-        cdi_monthly = benchmark.get("monthly", {}).get("cdi", 1.07)
+        cdi_monthly = benchmark.get("monthly", {}).get("cdi", 1.16)
         vs_cdi = benchmark.get("monthly", {}).get("vs_cdi", 0)
 
         # Selic context
-        selic_current = key_proj.get('selic', {}).get('current', 14.25)
-        selic_previous = key_proj.get('selic', {}).get('previous', 13.75)
-        selic_change = round((selic_current - selic_previous) * 100)
-        selic_direction = "elevou" if selic_current > selic_previous else "reduziu" if selic_current < selic_previous else "manteve"
+        selic_current = key_proj.get('selic', {}).get('current', 14.50)
+        selic_previous = key_proj.get('selic', {}).get('previous', 15.00)
+        selic_change = abs(round((selic_current - selic_previous) * 100))
+        selic_direction = "reduziu" if selic_current < selic_previous else "elevou" if selic_current > selic_previous else "manteve"
 
         # Build monthly stock returns section from CSV data
         positions = portfolio_analysis.get("positions", [])
@@ -192,28 +202,30 @@ class LetterWriter:
         rec_lines = rec_text.strip().split("\n") if rec_text else []
         rec_concise = "\n".join(rec_lines[:5]) if rec_lines else "Carteira alinhada ao perfil."
 
-        letter = f"""Carta Mensal de Investimentos — Fevereiro/2026
+        letter = f"""Carta Mensal de Investimentos — Março/2026
 
 Prezado(a) {client['name']},
 
-Espero que esteja bem. Apresento a seguir o relatório mensal de sua carteira de investimentos, com os principais destaques do mês de fevereiro de 2026. Como sempre, nosso objetivo é manter você informado sobre o desempenho de seus investimentos e as perspectivas para os próximos meses.
+Espero que esteja bem. Apresento a seguir o relatório mensal de sua carteira de investimentos, com os principais destaques do mês de março de 2026. Como sempre, nosso objetivo é manter você informado sobre o desempenho de seus investimentos e as perspectivas para os próximos meses.
 
 Cenário Macroeconômico
 
-O mês de fevereiro de 2026 foi marcado por um cenário de cautela nos mercados. O Comitê de Política Monetária (Copom) {selic_direction} a taxa Selic em {selic_change} pontos-base, para {selic_current}% ao ano (ante {selic_previous}% anteriormente), reforçando o compromisso com o controle da inflação, que acumula {key_proj.get('ipca', {}).get('twelve_month', 5.2)}% em 12 meses. A economia brasileira encerrou 2025 com crescimento de {key_proj.get('gdp', {}).get('actual_2025', 2.0)}%, abaixo dos 3,6% de 2024, e a projeção para 2026 é de {key_proj.get('gdp', {}).get('forecast_2026', 1.0)}%, refletindo os efeitos defasados da política monetária contracionista. O câmbio segue volátil, com o dólar cotado a R${key_proj.get('fx', {}).get('current', 5.85)}.
+O mês de março de 2026 foi marcado por uma importante mudança na política monetária brasileira. O Comitê de Política Monetária (Copom) {selic_direction} a taxa Selic em {selic_change} pontos-base, para {selic_current}% ao ano (ante {selic_previous}% anteriormente), sinalizando o início de um ciclo de afrouxamento monetário. A XP projeta mais 4 cortes consecutivos de 0,50 p.p., levando a Selic a 12,50% ao final de 2026. A inflação acumula {key_proj.get('ipca', {}).get('twelve_month', 3.95)}% em 12 meses, com projeção de 3,8% para 2026. A economia brasileira encerrou 2025 com crescimento de {key_proj.get('gdp', {}).get('actual_2025', 2.3)}%, e a projeção para 2026 é de {key_proj.get('gdp', {}).get('forecast_2026', 2.0)}%.
+
+No cenário externo, as tensões entre EUA e Irã elevaram o petróleo a cerca de US$80/barril, enquanto fluxos recordes para mercados emergentes impulsionaram o Ibovespa a uma alta acumulada de aproximadamente 20% no ano. O real se apreciou significativamente, com o dólar cotado a R${key_proj.get('fx', {}).get('current', 5.10)}, beneficiado pela rotação global para ativos emergentes.
 
 Desempenho da Carteira
 
-Em fevereiro de 2026, sua carteira apresentou rentabilidade de {monthly_ret:.2f}%, {"superando o" if vs_cdi > 0 else "ficando abaixo do"} CDI de {cdi_monthly:.2f}% em {abs(vs_cdi):.2f} pontos percentuais. No acumulado do ano (janeiro-fevereiro/2026), o retorno é de {returns.get('ytd', 0):.2f}%, e nos últimos 12 meses, de {returns.get('twelve_month', 0):.2f}%. A parcela de renda fixa continua sendo o principal motor de estabilidade da carteira, enquanto as posições em ações apresentaram desempenho misto no período.
+Em março de 2026, sua carteira apresentou rentabilidade de {monthly_ret:.2f}%, {"superando o" if vs_cdi > 0 else "ficando abaixo do"} CDI de {cdi_monthly:.2f}% em {abs(vs_cdi):.2f} pontos percentuais. No acumulado do ano (janeiro-março/2026), o retorno é de {returns.get('ytd', 0):.2f}%, e nos últimos 12 meses, de {returns.get('twelve_month', 0):.2f}%. O início do ciclo de cortes na Selic tende a beneficiar posições em renda fixa prefixada e FIIs, enquanto o forte rali das ações brasileiras contribuiu positivamente para as posições em renda variável.
 
 {f"Rentabilidade Mensal das Ações{chr(10)}{chr(10)}{stock_returns_text}" if stock_returns_text else ""}
 Posicionamento e Recomendações
 
-Com base na análise do seu perfil {profile_label} e nas condições atuais de mercado de fevereiro de 2026, destacamos os seguintes pontos de atenção:
+Com base na análise do seu perfil {profile_label} e nas condições atuais de mercado de março de 2026, destacamos os seguintes pontos de atenção:
 
 {rec_concise}
 
-Seguimos monitorando o mercado e avaliando oportunidades que possam contribuir para a evolução da sua carteira, sempre respeitando seu perfil de risco e objetivos de investimento.
+O cenário de queda de juros abre oportunidades em diversas classes de ativos, mas é importante manter a diversificação e atenção aos riscos geopolíticos (tensões EUA-Irã) e eleitorais (campanha presidencial 2026). Seguimos monitorando o mercado e avaliando oportunidades que possam contribuir para a evolução da sua carteira, sempre respeitando seu perfil de risco e objetivos de investimento.
 
 Permaneço à disposição para agendarmos uma conversa e discutirmos em mais detalhes o posicionamento de sua carteira. Não hesite em entrar em contato caso tenha qualquer dúvida.
 

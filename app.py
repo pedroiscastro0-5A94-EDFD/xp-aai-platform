@@ -546,7 +546,7 @@ elif page == "👤  Client Portfolio":
 
         # Transactions
         if transactions:
-            st.markdown("#### Recent Transactions — February 2026")
+            st.markdown("#### Recent Transactions — March 2026")
             tx_df = pd.DataFrame(transactions)
             tx_df["date"] = pd.to_datetime(tx_df["date"]).dt.strftime("%d/%m/%Y")
             tx_df["total"] = tx_df["total"].apply(format_brl)
