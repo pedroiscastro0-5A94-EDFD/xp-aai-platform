@@ -1,0 +1,24 @@
+Client ID,Client Name,Date,Type,Asset,Ticker,Quantity,Price,Total,Reason
+cli_001,Maria Helena Silva,2026-02-03,buy,HGLG11,HGLG11,100,168.50,16850.00,Aumento de exposição a FIIs logísticos
+cli_001,Maria Helena Silva,2026-02-10,sell,Petrobras,PETR4,200,37.20,7440.00,Redução de risco setorial - commodities
+cli_001,Maria Helena Silva,2026-02-18,buy,Tesouro IPCA+ 2035,NTNB35,2,3320.00,6640.00,Aproveitamento de abertura de taxa
+cli_001,Maria Helena Silva,2026-02-25,dividend,KNRI11,KNRI11,800,0.92,736.00,Rendimento mensal
+cli_001,Maria Helena Silva,2026-02-25,dividend,XPLG11,XPLG11,1000,0.78,780.00,Rendimento mensal
+cli_002,João Pedro Santos,2026-02-05,buy,BDR NVIDIA,NVDC34,500,53.20,26600.00,Aumento posição tech pré-earnings
+cli_002,João Pedro Santos,2026-02-12,sell,Magazine Luiza,MGLU3,2000,10.20,20400.00,Redução em varejo - cenário macro desfavorável
+cli_002,João Pedro Santos,2026-02-15,buy,QBTC11 (Bitcoin ETF),QBTC11,200,142.00,28400.00,Aumento exposição cripto - momentum positivo
+cli_002,João Pedro Santos,2026-02-20,buy,Localiza,RENT3,300,51.50,15450.00,Aproveitamento de correção
+cli_003,Ana Beatriz Costa,2026-02-01,dividend,KNRI11,KNRI11,1200,0.92,1104.00,Rendimento mensal
+cli_003,Ana Beatriz Costa,2026-02-01,dividend,HGLG11,HGLG11,1000,0.95,950.00,Rendimento mensal
+cli_003,Ana Beatriz Costa,2026-02-01,dividend,MXRF11,MXRF11,5000,0.10,500.00,Rendimento mensal
+cli_003,Ana Beatriz Costa,2026-02-10,buy,CRA Raízen IPCA+7%,CRA-RAIZ,1,150000.00,150000.00,Oportunidade em crédito privado com spread atrativo
+cli_004,Ricardo Mendes Oliveira,2026-02-07,buy,Eletrobras,ELET3,500,41.00,20500.00,Tese de valor - privatização e eficiência
+cli_004,Ricardo Mendes Oliveira,2026-02-14,buy,Raia Drogasil,RADL3,500,27.50,13750.00,Setor defensivo - proteção macro
+cli_004,Ricardo Mendes Oliveira,2026-02-20,sell,HASH11 (Crypto ETF),HASH11,300,68.00,20400.00,Realização parcial de lucros em cripto
+cli_005,Camila Ferreira Alves,2026-02-02,buy,BDR Tesla,TSLA34,1000,38.50,38500.00,Tese de veículos autônomos + energia
+cli_005,Camila Ferreira Alves,2026-02-08,buy,PRIO S.A.,PRIO3,1000,46.00,46000.00,Junior oil - crescimento de produção
+cli_005,Camila Ferreira Alves,2026-02-15,sell,CDB Liquidez Diária,CDB-LD,1,100000.00,100000.00,Resgate parcial para nova alocação
+cli_005,Camila Ferreira Alves,2026-02-15,buy,QBTC11 (Bitcoin ETF),QBTC11,500,140.00,70000.00,Rebalanceamento - aumento exposição cripto
+cli_005,Camila Ferreira Alves,2026-02-22,buy,Nubank (Nu Holdings),ROXO34,3000,11.80,35400.00,Aumento posição após resultados Q4
+cli_006,Paulo Roberto Duarte,2026-02-10,buy,WEG S.A.,WEGE3,200,41.50,8300.00,Empresa de qualidade - aporte recorrente
+cli_006,Paulo Roberto Duarte,2026-02-25,dividend,KNRI11,KNRI11,400,0.92,368.00,Rendimento mensal

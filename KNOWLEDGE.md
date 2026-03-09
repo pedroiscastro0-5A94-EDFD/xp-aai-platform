@@ -105,11 +105,12 @@ The key insight: Portfolio and Macro analysis are **independent** — they don't
 - Positions with P&L < -25% → "extreme_loss" alert
 - Positions with P&L > +30% → "extreme_gain" alert
 
-**For Albert specifically:**
-- HAPV3: -74.58% loss (extreme alert)
-- LREN3: -41.7% loss (extreme alert)
-- ARZZ3: -31.05% loss (extreme alert)
-- MRFG3: +43.5% gain (extreme alert)
+**For Albert specifically (Feb 2026 prices from B3/Yahoo Finance):**
+- LREN3: -46.4% loss (extreme alert)
+- ARZZ3: -39.3% loss (extreme alert)
+- HAPV3: -32.8% loss (extreme alert)
+- CONST-FIA: -27.9% loss (extreme alert)
+- MRFG3: +21.7% gain (below alert threshold)
 
 **Output:** Structured JSON with every metric calculated by code.
 
@@ -131,9 +132,11 @@ The key insight: Portfolio and Macro analysis are **independent** — they don't
 **What it does:** Compares current allocation vs. target for the client's risk profile, flags drift >5pp, and generates CVM-compliant suggestions.
 
 **For Albert (Moderado profile):**
-- Target: RF 45%, Ações 25%, FIIs 15%, Intl 12%, Cripto 3%
-- Actual: RF ~67%, Ações ~29%, FIIs 0%, Intl 0%, Cripto 0%
-- Drift flags: RF overweight by ~22pp, FIIs underweight by 15pp, Intl underweight by 12pp
+- Target: RF 35%, Multimercado 10%, Ações 25%, FIIs 15%, Intl 12%, Cripto 3%
+- Actual: RF ~44%, Multimercado ~27%, Ações ~30%, FIIs 0%, Intl 0%, Cripto 0%
+- Drift flags: Multimercado overweight by ~17pp, FIIs underweight by 15pp, Intl underweight by 12pp
+
+**Asset classes (6 total):** Fixed Income, Multi-Market, Equities, REITs, International, Crypto
 
 **CVM compliance in prompts:**
 - NEVER: "compre", "venda", "recomendo a compra"
@@ -230,12 +233,36 @@ The key insight: Portfolio and Macro analysis are **independent** — they don't
 - No frontend skills needed — pure Python
 - Perfect for prototyping and demo purposes
 - `streamlit run app.py` — one command to launch
-- 5 pages: Client Dashboard, Client Deep Dive, Report Generator, Recommendations, ➕ Add Client
+- 5 pages: Overview, Client Portfolio, Reports, Rebalancing, Add Client
 
 ### Why Plotly (not Matplotlib)?
 - Interactive charts (hover, zoom) — much better for financial data
 - Dark theme support that matches the app aesthetic
 - Better browser rendering than static images
+
+### Streamlit UI — Key Design Decisions
+The app has a professional dark-theme dashboard designed to feel like a real financial tool, not a prototype:
+
+**Overview page:**
+- Top metric cards (Total AUM, Selic, CDI, IBOV) — key numbers at a glance
+- Interactive benchmarks chart (line chart with multi-select for CDI/IBOV/IFIX/S&P, timeframe selector: 3M/6M/12M)
+- Client Status table with column headers (Client, Monthly Return, Status)
+
+**Client Portfolio page:**
+- Donut chart for allocation by asset class (6 classes including Multi-Market in pink)
+- Horizontal bar chart for Performance vs. Benchmarks (Portfolio vs CDI vs IBOV vs IFIX)
+- Full holdings table with P&L and color-coded returns
+- Transaction history for the month
+
+**Rebalancing page:**
+- Diverging drift chart (bars above/below zero, with ±5pp threshold lines)
+- Current vs. Target summary with color-coded indicators
+- Position-level alerts for extreme P&L
+
+**Reports page:**
+- Agent pipeline visualization (6 agents with status indicators)
+- Letter preview in document-style container (white background, serif font, scrollable)
+- Download button for .docx output
 
 ---
 
@@ -456,10 +483,10 @@ drive-download-*/  # Temporary download folders
 6. Clear benchmark comparison (vs CDI, IBOV, by asset class)
 
 ### Albert's Specific Improvements
-- **Flagged extreme losses:** HAPV3 (-74.58%), LREN3 (-41.7%), ARZZ3 (-31.05%)
-- **Flagged extreme gains:** MRFG3 (+43.5%)
-- **Allocation drift detected:** No FIIs, no international = massively underweight
-- **Specific recommendation:** Diversify into FIIs and international to align with moderate profile
+- **Flagged extreme losses:** LREN3 (-46.4%), ARZZ3 (-39.3%), HAPV3 (-32.8%), CONST-FIA (-27.9%)
+- **Fund reclassification:** Brave I FIC FIM CP and Ibiuna Hedge FIC FIM correctly classified as Multi-Market (not Fixed Income) — "FIM" = Fundo de Investimento Multimercado
+- **Allocation drift detected:** No FIIs, no international, no crypto = massively underweight; Multi-Market overweight by ~17pp
+- **Specific recommendation:** Diversify into FIIs and international to align with moderate profile, reduce Multi-Market exposure
 - **Compliance score:** 85/100 — all checks passed
 
 ---
@@ -583,14 +610,22 @@ xp-challenge/
 │   ├── __init__.py
 │   ├── clients.py                   # 7 clients (including Albert)
 │   └── market.py                    # Benchmarks, targets, AAI profile
-├── input/                           # Original challenge input files
-│   ├── XP - Albert_s portfolio.txt
-│   ├── XP - Albert_s risk profile.txt
-│   ├── XP - Macro analysis.txt
-│   └── profitability_calc_wip.csv
+├── input/                           # Original challenge input files + generated CSVs
+│   ├── XP - Albert_s portfolio.txt  # Original: Albert's portfolio (from challenge)
+│   ├── XP - Albert_s portfolio.pdf  # PDF version
+│   ├── XP - Albert_s risk profile.txt  # Original: Albert's risk profile
+│   ├── XP - Albert_s risk profile.pdf  # PDF version
+│   ├── XP - Macro analysis.txt     # Original: XP macro report
+│   ├── XP - Macro analysis.pdf     # PDF version
+│   ├── profitability_calc_wip.csv   # Original: stock price data for monthly returns
+│   ├── clients.csv                  # Generated: all 7 clients (profile, AUM, goals, etc.)
+│   ├── holdings.csv                 # Generated: all 86 holdings (prices, P&L, weights)
+│   └── transactions.csv            # Generated: all Feb 2026 transactions
 ├── output/                          # Generated deliverables
-│   ├── monthly_report_albert.docx   # Albert's monthly letter
-│   └── workflow_report.docx         # Answers to 3 questions
+│   ├── monthly_report_albert.docx   # Albert's monthly letter (original name)
+│   ├── monthly_report_albert_da_silva.docx  # Albert's letter (full name)
+│   ├── monthly_report_ricardo_mendes_oliveira.docx  # Ricardo's letter
+│   └── workflow_report.docx         # Answers to 3 interview questions
 ├── .streamlit/config.toml           # Streamlit theme config
 ├── api_server.py                    # Flask API for real-time calculations (port 5050)
 ├── app.py                           # Streamlit AAI Platform (5 pages + Add Client)
